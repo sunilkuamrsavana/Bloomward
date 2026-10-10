@@ -4,6 +4,68 @@ import XCTest
 
 final class PlannerTests: XCTestCase {
     private let day = LocalDay(year: 2026, month: 10, day: 10)
+    func testRoutinePlanningChoosesDateAndTimeWithoutChangingTemplate() throws {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book")])
+        let start = day.adding(days: 2)
+        let task = try routine.planTask(on: start, minute: 420)
+        XCTAssertEqual(task.startsOn, start)
+        XCTAssertEqual(task.minute, 420)
+        XCTAssertNil(task.weekdays)
+        XCTAssertEqual(task.routineID, routine.id)
+        XCTAssertEqual(task.steps.map(\.title), ["Book"])
+        XCTAssertFalse(task.includes(day))
+        XCTAssertTrue(task.includes(start))
+        XCTAssertFalse(task.includes(start.adding(days: 1)))
+        XCTAssertNil(routine.schedule)
+    }
+    func testRoutinePlanningDoesNotInheritTemplateTime() throws {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book")],
+                              schedule: RoutineSchedule(weekdays: Set(1...7), startMinute: 480))
+        XCTAssertNil(try routine.planTask(on: day).minute)
+        XCTAssertEqual(try routine.planTask(on: day, minute: 600).minute, 600)
+        XCTAssertEqual(routine.schedule?.startMinute, 480)
+    }
+    func testRoutinePlanningSupportsDailyAndSelectedWeekdays() throws {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book")])
+        let daily = try routine.planTask(on: day, weekdays: Set(1...7))
+        let weekly = try routine.planTask(on: day, minute: 540, weekdays: [7])
+        XCTAssertTrue(daily.includes(day.adding(days: 1)))
+        XCTAssertFalse(weekly.includes(day.adding(days: 1)))
+        XCTAssertTrue(weekly.includes(day.adding(days: 7)))
+        let restored = try JSONDecoder().decode(PlanTask.self, from: JSONEncoder().encode(weekly))
+        XCTAssertEqual(restored, weekly)
+    }
+    func testRoutinePlanningRejectsEmptyChecklistAndInvalidSchedule() {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book")])
+        XCTAssertThrowsError(try Routine(title: "Empty", steps: []).planTask(on: day))
+        XCTAssertThrowsError(try routine.planTask(on: day, minute: 1440))
+        XCTAssertThrowsError(try routine.planTask(on: day, weekdays: []))
+    }
+    func testRoutineRepetitionCanStartBeforeItsFirstEligibleWeekday() throws {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book", schedule: RoutineSchedule(weekdays: [2]))])
+        XCTAssertThrowsError(try routine.planTask(on: day))
+        let task = try routine.planTask(on: day, weekdays: [2])
+        XCTAssertEqual(task.startsOn, day)
+        XCTAssertFalse(task.includes(day))
+        XCTAssertTrue(task.includes(day.adding(days: 2)))
+        let state = AppState(routines: [routine], planTasks: [task])
+        XCTAssertEqual(state.plan(on: day.adding(days: 2))[0].steps.map(\.title), ["Book"])
+        XCTAssertThrowsError(try routine.planTask(on: day, weekdays: [3]))
+    }
+    func testTimedRoutinePlanningPreservesCapturedProgress() throws {
+        let routine = Routine(title: "Read", steps: [RoutineStep(title: "Book")])
+        let task = try routine.planTask(on: day, minute: 420, weekdays: Set(1...7))
+        var state = AppState(routines: [routine], planTasks: [task])
+        state.capturePlan(on: day)
+        var completed = state.plan(on: day)[0]
+        completed.status = .completed
+        try state.saveOccurrence(completed)
+        state.routines[0].steps[0].title = "New chapter"
+        XCTAssertEqual(state.plan(on: day)[0].steps[0].title, "Book")
+        XCTAssertEqual(state.plan(on: day)[0].status, .completed)
+        XCTAssertEqual(state.plan(on: day.adding(days: 1))[0].minute, 420)
+        XCTAssertEqual(state.plan(on: day.adding(days: 1))[0].steps[0].title, "New chapter")
+    }
     func testOneOffOnlyAppearsOnItsDate() throws {
         var state = AppState(); try state.savePlanTask(PlanTask(title: "Call", startsOn: day))
         XCTAssertEqual(state.plan(on: day).count, 1)

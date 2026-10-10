@@ -28,8 +28,7 @@ private struct PlannerIcon: View {
         Image(systemName: symbol)
             .font(.body.weight(.medium))
             .foregroundStyle(PlannerStyle.accent)
-            .frame(width: 40, height: 40)
-            .background(PlannerStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+            .frame(width: 28, height: 36)
             .accessibilityHidden(true)
     }
 }
@@ -41,20 +40,21 @@ private struct PlannerEmptyState: View {
     var actionTitle: String? = nil
     var action: () -> Void = {}
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            PlannerIcon(symbol: symbol)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+        VStack(spacing: 8) {
+            Image(systemName: symbol).font(.title2).foregroundStyle(.tertiary).accessibilityHidden(true)
+            VStack(spacing: 4) {
+                Text(title).font(.headline).foregroundStyle(.primary)
                 Text(detail).font(.subheadline).foregroundStyle(.secondary)
             }
             if let actionTitle {
                 Button(action: action) {
                     Label(actionTitle, systemImage: "plus")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44)
+                }.buttonStyle(.borderless)
             }
-        }.padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+        }.multilineTextAlignment(.center).padding(.vertical, 24)
+            .frame(maxWidth: .infinity).listRowBackground(Color.clear).listRowSeparator(.hidden)
     }
 }
 
@@ -190,6 +190,7 @@ private struct PlannerDayView: View {
     @Environment(AppModel.self) private var model
     @State private var addsTask = false
     @State private var addsRoutine = false
+    @State private var showsAddOptions = false
     @State private var editing: PlanOccurrence?
     @State private var error: String?
     private var open: [PlanOccurrence] { model.selectedPlan.filter { [.pending, .partial].contains($0.status) } }
@@ -216,8 +217,8 @@ private struct PlannerDayView: View {
             if model.selectedPlan.isEmpty {
                 Section {
                     PlannerEmptyState(symbol: "checklist", title: "Nothing planned yet",
-                        detail: "Start with a task, or bring a saved routine into your day.", actionTitle: "Add a task") { addsTask = true }
-                } header: { PlannerSectionTitle(title: "Your plan") }
+                        detail: "Add a task or plan a routine.", actionTitle: "Add a task") { addsTask = true }
+                }.listRowBackground(Color.clear)
             } else {
                 if !open.isEmpty {
                     Section { ForEach(open) { taskRow($0) } }
@@ -247,11 +248,14 @@ private struct PlannerDayView: View {
         .safeAreaInset(edge: .top, spacing: 0) { PlannerDateBar() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Add task", systemImage: "plus") { addsTask = true }
-                    Button("Add routine", systemImage: "repeat") { addsRoutine = true }
-                } label: { Label("Add", systemImage: "plus").fontWeight(.semibold) }.accessibilityLabel("Add to this day")
+                Button { showsAddOptions = true } label: { Image(systemName: "plus").fontWeight(.semibold) }
+                    .accessibilityLabel("Add to this day")
             }
+        }
+        .confirmationDialog("Add to this day", isPresented: $showsAddOptions, titleVisibility: .visible) {
+            Button("Add task") { addsTask = true }
+            Button("Add routine") { addsRoutine = true }
+            Button("Cancel", role: .cancel) {}
         }
         .sheet(isPresented: $addsTask) { PlannerTaskEditor(day: model.selectedPlanDay) }
         .sheet(isPresented: $addsRoutine) { PlannerRoutinePicker() }
@@ -307,6 +311,59 @@ private func plannerTime(_ minute: Int) -> String {
     (Calendar.current.date(from: DateComponents(hour: minute / 60, minute: minute % 60)) ?? Date()).formatted(date: .omitted, time: .shortened)
 }
 
+private func plannerScheduleSummary(weekdays: Set<Int>?, minute: Int?) -> String {
+    let frequency: String
+    if let weekdays {
+        frequency = weekdays.count == 7 ? "Every day" : weekdays.isEmpty ? "Choose weekdays" :
+            weekdays.sorted().map { Calendar.current.shortWeekdaySymbols[$0 - 1] }.joined(separator: ", ")
+    } else { frequency = "Once" }
+    return "\(frequency) · \(minute.map(plannerTime) ?? "Any time")"
+}
+
+private struct PlannerScheduleFields: View {
+    @Binding var repeats: Bool
+    @Binding var weekdays: Set<Int>
+    @Binding var timed: Bool
+    @Binding var time: Date
+    @Binding var date: Date
+    var allowsDateChange = true
+    var allowsRepetition = true
+    private var minute: Int? {
+        guard timed else { return nil }
+        let components = Calendar.current.dateComponents([.hour, .minute], from: time)
+        return (components.hour ?? 0) * 60 + (components.minute ?? 0)
+    }
+    var body: some View {
+        if allowsRepetition {
+            Picker("Frequency", selection: $repeats) {
+                Text("Once").tag(false)
+                Text("Repeat").tag(true)
+            }.pickerStyle(.segmented)
+        }
+        if allowsDateChange {
+            DatePicker(repeats ? "Starts on" : "Date", selection: $date, displayedComponents: .date)
+        }
+        if allowsRepetition && repeats {
+            Button {
+                weekdays = Set(1...7)
+            } label: {
+                HStack {
+                    Text("Every day").foregroundStyle(.primary)
+                    Spacer()
+                    if weekdays.count == 7 { Image(systemName: "checkmark") }
+                }.frame(minHeight: 44).contentShape(Rectangle())
+            }.accessibilityAddTraits(weekdays.count == 7 ? .isSelected : [])
+            PlannerWeekdays(days: $weekdays)
+        }
+        Toggle("Set a start time", isOn: $timed)
+        if timed { DatePicker("Start time", selection: $time, displayedComponents: .hourAndMinute) }
+        if allowsRepetition {
+            Text(plannerScheduleSummary(weekdays: repeats ? weekdays : nil, minute: minute))
+                .font(.subheadline).foregroundStyle(.secondary)
+        }
+    }
+}
+
 private struct PlannerWeekdays: View {
     @Binding var days: Set<Int>
     var body: some View {
@@ -336,6 +393,7 @@ private struct PlannerTaskEditor: View {
     @State private var time: Date
     @State private var repeats: Bool
     @State private var weekdays: Set<Int>
+    @State private var date: Date
     @State private var steps: [PlanStep]
     @State private var newStep = ""
     @State private var status: PlanStatus
@@ -354,6 +412,7 @@ private struct PlannerTaskEditor: View {
         _time = State(initialValue: Calendar.current.date(from: DateComponents(hour: (minute ?? 540) / 60, minute: (minute ?? 540) % 60)) ?? Date())
         _repeats = State(initialValue: series?.weekdays != nil)
         _weekdays = State(initialValue: series?.weekdays ?? Set(1...7))
+        _date = State(initialValue: Calendar.current.date(from: DateComponents(year: day.year, month: day.month, day: day.day, hour: 12)) ?? Date())
         _steps = State(initialValue: occurrence?.steps ?? series?.steps ?? [])
         _status = State(initialValue: occurrence?.status ?? .pending)
     }
@@ -367,6 +426,7 @@ private struct PlannerTaskEditor: View {
             || steps != (occurrence?.steps ?? series?.steps ?? []) || status != (occurrence?.status ?? .pending)
             || minute != (occurrence?.minute ?? series?.minute) || repeats != (series?.weekdays != nil)
             || (repeats && weekdays != (series?.weekdays ?? Set(1...7))) || !newStep.isEmpty
+            || (occurrence == nil && series == nil && LocalDay(date: date, calendar: model.calendar) != day)
     }
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && title.count <= 200
@@ -380,16 +440,10 @@ private struct PlannerTaskEditor: View {
                     TextField("Task name", text: $title).accessibilityLabel("Task name")
                 }
                 Section {
-                    Toggle("Set a time", isOn: $timed)
-                    if timed { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
-                } header: { Text("Time") } footer: { Text("A planning time, not a notification.") }
-                if occurrence == nil {
-                    Section {
-                        Toggle("Repeat", isOn: $repeats)
-                        if repeats { PlannerWeekdays(days: $weekdays) }
-                    } header: { Text("Repetition") } footer: {
-                        Text(series == nil ? "Starts on this date. Each day has its own completion record." : "Changes start on the selected date or today, whichever is later. An already saved checklist stays unchanged; the replacement starts the following day.")
-                    }
+                    PlannerScheduleFields(repeats: $repeats, weekdays: $weekdays, timed: $timed, time: $time, date: $date,
+                        allowsDateChange: occurrence == nil && series == nil, allowsRepetition: occurrence == nil)
+                } header: { Text("Schedule") } footer: {
+                    Text(series == nil ? "A planning time, not a reminder. Each date keeps its own progress." : "Changes apply from the selected date or today, whichever is later. Saved checklists stay unchanged. Times don't send reminders.")
                 }
                 Section("Steps (optional)") {
                     ForEach($steps) { $step in
@@ -426,7 +480,7 @@ private struct PlannerTaskEditor: View {
                             Text("To do").tag(PlanStatus.pending); Text("Done").tag(PlanStatus.completed)
                             Text("Partly done").tag(PlanStatus.partial); Text("Skipped").tag(PlanStatus.skipped)
                             if occurrence.status == .moved { Text("Moved").tag(PlanStatus.moved) }
-                        }.disabled(occurrence.status == .moved)
+                        }.pickerStyle(.navigationLink).disabled(occurrence.status == .moved)
                         if occurrence.status != .moved {
                             Button("Move to another date") { moves = true }
                             Button("Remove from this day", role: .destructive) { removes = true }
@@ -493,7 +547,7 @@ private struct PlannerTaskEditor: View {
                 try model.updateOccurrence(changed)
             } else {
                 let task = PlanTask(id: series?.id ?? draftID, title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                    notes: notes, startsOn: series?.startsOn ?? day, endsOn: series?.endsOn, minute: minute,
+                    notes: notes, startsOn: series?.startsOn ?? LocalDay(date: date, calendar: model.calendar), endsOn: series?.endsOn, minute: minute,
                     weekdays: repeats ? weekdays : nil, steps: steps, routineID: series?.routineID)
                 if series != nil && dirty { try model.editRepeatingTask(task) }
                 else if series == nil { try model.saveTask(task) }
@@ -533,34 +587,35 @@ private struct PlannerRoutinesView: View {
                 }
                 if visibleRoutines.isEmpty {
                     PlannerEmptyState(symbol: "repeat", title: query.isEmpty ? "No routines yet" : "No matching routines",
-                        detail: query.isEmpty ? "Build a checklist once. Use it whenever you need it." : "Try a different routine name.",
+                        detail: query.isEmpty ? "Create a checklist to use again." : "Try a different name.",
                         actionTitle: query.isEmpty ? "Create routine" : nil) { creates = true }
                 }
-            } header: { PlannerSectionTitle(title: "Your routines", detail: "\(visibleRoutines.count)") }
-            Section {
+            } header: {
+                if !visibleRoutines.isEmpty { PlannerSectionTitle(title: "Your routines", detail: "\(visibleRoutines.count)") }
+            }.listRowBackground(visibleRoutines.isEmpty ? Color.clear : PlannerStyle.surface)
+            if !repeatingTasks.isEmpty {
+              Section {
                 ForEach(repeatingTasks) { task in
                     Button { series = task } label: {
                         HStack(spacing: 12) {
                             PlannerIcon(symbol: "calendar.badge.clock")
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.title).font(.body.weight(.medium)).foregroundStyle(.primary)
-                                Text(task.endsOn == nil ? "Repeats on selected weekdays" : "Repetition stopped").font(.caption).foregroundStyle(.secondary)
+                                Text(plannerScheduleSummary(weekdays: task.weekdays, minute: task.minute)).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                         }.frame(minHeight: 44)
                     }.buttonStyle(.plain)
                 }
-                if repeatingTasks.isEmpty {
-                    Text(query.isEmpty ? "Tasks with Repeat enabled appear here." : "No matching repeating tasks.").font(.subheadline).foregroundStyle(.secondary)
-                }
-            } header: { PlannerSectionTitle(title: "Repeating tasks", detail: "\(repeatingTasks.count)") }
+              } header: { PlannerSectionTitle(title: "Repeating plans", detail: "\(repeatingTasks.count)") }
+            }
         }
         .modifier(PlannerListLayout())
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search routines")
         .navigationTitle("Routines")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { creates = true } label: { Label("Add", systemImage: "plus").fontWeight(.semibold) }.accessibilityLabel("Add routine")
+                Button { creates = true } label: { Image(systemName: "plus").fontWeight(.semibold) }.accessibilityLabel("Add routine")
             }
         }
         .sheet(isPresented: $creates) { PlannerRoutineEditor() }
@@ -578,7 +633,7 @@ private struct PlannerRoutineEditor: View {
     @State private var error: String?
     @State private var discards = false
     @State private var removes = false
-    @State private var added = false
+    @State private var plansRoutine = false
     init(routine: Routine? = nil) { original = routine; _routine = State(initialValue: routine ?? Routine(title: "", steps: [])) }
     private var dirty: Bool { routine != (original ?? Routine(id: routine.id, title: "", steps: [])) }
     var body: some View {
@@ -587,11 +642,11 @@ private struct PlannerRoutineEditor: View {
                 Section("Name") { TextField("Routine name", text: $routine.title).accessibilityLabel("Routine name") }
                 Section { PlannerRoutineItems(items: $routine.steps, depth: 0) }
                     header: { Text("Checklist") } footer: { Text("Steps belong to this routine. No habit linking or separate setup is needed.") }
-                if let original {
+                if original != nil {
                     Section {
                         Button {
-                            do { try model.addRoutineToDay(original); added = true } catch { self.error = error.localizedDescription }
-                        } label: { Label("Add to selected day", systemImage: "calendar.badge.plus").frame(minHeight: 44) }.disabled(dirty)
+                            plansRoutine = true
+                        } label: { Label("Plan this routine", systemImage: "calendar.badge.plus").frame(minHeight: 44) }.disabled(dirty)
                         Button("Archive routine", role: .destructive) { removes = true }
                     } footer: { Text("Adding makes a checklist for the selected date. Template edits won't change saved daily checklists.") }
                 }
@@ -613,7 +668,11 @@ private struct PlannerRoutineEditor: View {
             .confirmationDialog("Archive this routine?", isPresented: $removes, titleVisibility: .visible) {
                 Button("Archive", role: .destructive) { if let original { model.archiveRoutine(original); dismiss() } }
             } message: { Text("Daily checklists and progress are kept. Restore templates from Settings.") }
-            .alert("Added to your day", isPresented: $added) { Button("OK") { dismiss() } }
+            .sheet(isPresented: $plansRoutine) {
+                if let original {
+                    PlannerAddRoutineForm(routine: original, date: model.selectedPlanDate) { dismiss() }
+                }
+            }
         }.interactiveDismissDisabled(dirty)
     }
 }
@@ -658,30 +717,30 @@ private struct PlannerRoutineItems: View {
 private struct PlannerRoutinePicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var error: String?
     @State private var creates = false
     @State private var selected: Routine?
     var body: some View {
         NavigationStack {
             List {
-                Section { Text("Choose a checklist for \(model.selectedPlanDate.formatted(date: .abbreviated, time: .omitted)).").foregroundStyle(.secondary) }
+                if model.activeRoutines.isEmpty {
+                    PlannerEmptyState(symbol: "repeat", title: "No routines yet", detail: "Create a checklist, then choose its schedule.",
+                        actionTitle: "Create a routine") { creates = true }
+                }
                 ForEach(model.activeRoutines) { routine in
                     Button {
                         selected = routine
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(routine.title)
-                            Text("\(routine.executionSteps(on: model.selectedPlanDay).count) available steps").font(.caption).foregroundStyle(.secondary)
                         }.frame(minHeight: 44)
-                    }.disabled(routine.executionSteps(on: model.selectedPlanDay).isEmpty)
+                    }
                 }
-                Button("Create a routine") { creates = true }
-                if let error { Text(error).foregroundStyle(.red) }
+                if !model.activeRoutines.isEmpty { Button("Create a routine") { creates = true } }
             }.modifier(PlannerListLayout()).navigationTitle("Add routine")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .sheet(isPresented: $creates) { PlannerRoutineEditor() }
             .sheet(item: $selected) { routine in
-                PlannerAddRoutineForm(routine: routine) { dismiss() }
+                PlannerAddRoutineForm(routine: routine, date: model.selectedPlanDate) { dismiss() }
             }
         }
     }
@@ -695,25 +754,41 @@ private struct PlannerAddRoutineForm: View {
     @Environment(\.dismiss) private var dismiss
     @State private var repeats = false
     @State private var weekdays = Set(1...7)
+    @State private var timed = false
+    @State private var time = Calendar.current.date(from: DateComponents(hour: 9)) ?? Date()
+    @State private var date: Date
     @State private var error: String?
+    init(routine: Routine, date: Date, added: @escaping () -> Void) {
+        self.routine = routine; self.added = added
+        _date = State(initialValue: date)
+    }
+    private var minute: Int? {
+        guard timed else { return nil }
+        let components = model.calendar.dateComponents([.hour, .minute], from: time)
+        return (components.hour ?? 0) * 60 + (components.minute ?? 0)
+    }
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     Text(routine.title).font(.headline)
-                    Text(model.selectedPlanDate.formatted(date: .abbreviated, time: .omitted)).foregroundStyle(.secondary)
                 }
                 Section {
-                    Toggle("Repeat", isOn: $repeats)
-                    if repeats { PlannerWeekdays(days: $weekdays) }
-                } footer: { Text("Each date keeps its own checklist and progress. Day-specific steps are included only on their selected weekdays.") }
+                    PlannerScheduleFields(repeats: $repeats, weekdays: $weekdays, timed: $timed, time: $time, date: $date)
+                } header: { Text("Schedule") } footer: {
+                    Text("A planning time, not a reminder. Each date keeps its own checklist. Steps with weekday rules keep those rules.")
+                }
                 if let error { Text(error).foregroundStyle(.red) }
             }.modifier(PlannerFormLayout()).navigationTitle("Plan routine")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
-                        do { try model.addRoutineToDay(routine, weekdays: repeats ? weekdays : nil); dismiss(); added() }
+                        do {
+                            try model.addRoutineToDay(routine, on: LocalDay(date: date, calendar: model.calendar),
+                                minute: minute, weekdays: repeats ? weekdays : nil)
+                            dismiss(); added()
+                        }
                         catch { self.error = error.localizedDescription }
                     }.disabled(repeats && weekdays.isEmpty)
                 }
@@ -737,9 +812,9 @@ private struct PlannerNotesView: View {
             if notes.isEmpty {
                 Section {
                     PlannerEmptyState(symbol: "square.and.pencil", title: query.isEmpty ? "No notes for this day" : "No matching notes",
-                        detail: query.isEmpty ? "Capture an idea, make a plan, or reflect on this day. Notes save as you write." : "Try another word from the title or text.",
+                        detail: query.isEmpty ? "Write something you want to keep." : "Try a different search.",
                         actionTitle: query.isEmpty ? "Write a note" : nil) { creates = true }
-                } header: { PlannerSectionTitle(title: "Day notes", detail: "0") }
+                }.listRowBackground(Color.clear)
             }
             if !notes.isEmpty {
                 Section {
@@ -762,7 +837,7 @@ private struct PlannerNotesView: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search this day's notes")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { creates = true } label: { Label("New", systemImage: "square.and.pencil").fontWeight(.semibold) }.accessibilityLabel("New note")
+                Button { creates = true } label: { Image(systemName: "square.and.pencil").fontWeight(.semibold) }.accessibilityLabel("New note")
                 }
         }
         .sheet(isPresented: $creates) { NavigationStack { PlannerNoteEditor(note: DayNote(day: model.selectedPlanDay)) } }
@@ -780,6 +855,7 @@ private struct PlannerNoteEditor: View {
     @State private var trash = false
     @State private var initialized = false
     @State private var discards = false
+    @State private var showsOptions = false
     init(note: DayNote) { _draft = State(initialValue: note) }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -806,10 +882,7 @@ private struct PlannerNoteEditor: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) { Button("Done") { save(); if error == nil { dismiss() } }.fontWeight(.semibold) }
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("Move to Trash", systemImage: "trash", role: .destructive) { trash = true }
-                    if error != nil { Button("Close without saving", role: .destructive) { discards = true } }
-                } label: { Image(systemName: "ellipsis").frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Note options")
+                Button { showsOptions = true } label: { Image(systemName: "ellipsis") }.accessibilityLabel("Note options")
             }
         }
         .task { if !initialized { expected = model.state.dayNotes.first { $0.id == draft.id }; initialized = true } }
@@ -817,6 +890,11 @@ private struct PlannerNoteEditor: View {
         .onChange(of: phase) { _, value in if value != .active { save() } }
         .onDisappear { if initialized && error == nil { save() } }.interactiveDismissDisabled(error != nil)
         .navigationBarBackButtonHidden(error != nil)
+        .confirmationDialog("Note options", isPresented: $showsOptions, titleVisibility: .visible) {
+            Button("Move to Trash", role: .destructive) { trash = true }
+            if error != nil { Button("Close without saving", role: .destructive) { discards = true } }
+            Button("Cancel", role: .cancel) {}
+        }
         .confirmationDialog("Move this note to Trash?", isPresented: $trash, titleVisibility: .visible) {
             Button("Move to Trash", role: .destructive) { draft.isArchived = true; save(); if error == nil { dismiss() } }
         } message: { Text("Restore it from Settings → Trash.") }
@@ -885,53 +963,54 @@ private struct PlannerProfileView: View {
     var body: some View {
         List {
             Section {
-                HStack(spacing: 16) {
-                    PlannerProfileAvatar(size: 56)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(displayName).font(.title3.weight(.semibold))
-                        Text(account.email ?? (account.userID == nil ? "Using this iPhone without an account" : "Signed in"))
-                            .font(.subheadline).foregroundStyle(.secondary)
-                    }
-                }.padding(.vertical, 8).listRowSeparator(.hidden)
-                Button {
-                    draftName = profileName; editsName = true
-                } label: { Label(profileName.isEmpty ? "Add a preferred name" : "Edit preferred name", systemImage: "pencil") }
-            }
+                VStack(spacing: 8) {
+                    PlannerProfileAvatar(size: 52)
+                    Text(displayName).font(.title2.weight(.semibold))
+                    Text(account.email ?? (account.userID == nil ? "Local profile" : "Signed in"))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Button("Edit name") { draftName = profileName; editsName = true }
+                        .font(.subheadline).frame(minHeight: 44).buttonStyle(.borderless)
+                }.frame(maxWidth: .infinity).padding(.vertical, 4)
+                    .listRowBackground(Color.clear).listRowSeparator(.hidden)
+            }.listRowBackground(Color.clear)
             Section {
                 if account.userID == nil {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button {
-                            account.requestLocalBackup(model.state); account.isLoginPresented = true
-                        } label: { Label("Sign in for backup & sync", systemImage: "person.crop.circle.badge.checkmark") }
-                        Text("Optional. Your plan stays local until you choose to import it.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
+                    Button {
+                        account.requestLocalBackup(model.state); account.isLoginPresented = true
+                    } label: { Label("Sign in", systemImage: "person.crop.circle") }
                 } else {
-                    Button { managesAccount = true } label: { Label("Manage account", systemImage: "person.crop.circle") }
+                    Button { managesAccount = true } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Manage account")
+                                Text("Security and account deletion").font(.caption).foregroundStyle(.secondary)
+                            }
+                        } icon: { Image(systemName: "person.crop.circle") }
+                    }
                     Button(role: .destructive) { signOut = true } label: { Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right") }
                         .disabled(account.isBusy)
                 }
-            } header: { PlannerSectionTitle(title: "Account") }
+            } header: { Text("Account") } footer: {
+                if account.userID == nil { Text("Optional backup and sync. Local data is imported only with your permission.") }
+            }
             Section {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label(account.userID == nil ? "Saved on this iPhone" : "Cloud backup", systemImage: account.userID == nil ? "iphone" : "icloud")
-                    Text(account.userID == nil ? "Not backed up. Uninstalling the app removes local data." : (model.cloudSync?.status ?? "Preparing cloud sync…"))
+                    Label(account.userID == nil ? "On this iPhone" : "Cloud sync", systemImage: account.userID == nil ? "iphone" : "icloud")
+                    if account.userID != nil { Text(model.cloudSync?.status ?? "Preparing cloud sync…")
                         .font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
                 if let sync = model.cloudSync, account.userID != nil {
                     Button(sync.conflicts.isEmpty ? "Sync now" : "Review sync conflict") {
                         if sync.conflicts.isEmpty { Task { await sync.syncNow() } } else { conflicts = true }
                     }.disabled(sync.isSyncing)
                 }
-            } header: { PlannerSectionTitle(title: "Storage & sync") }
+            } header: { Text("Your data") } footer: {
+                if account.userID == nil { Text("Not backed up. Deleting the app removes local data.") }
+            }
             Section {
                 NavigationLink { PlannerSettingsView() } label: {
-                    Label {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Settings")
-                            Text("Appearance, Trash, and previous records").font(.caption).foregroundStyle(.secondary)
-                        }
-                    } icon: { Image(systemName: "gearshape") }
+                    Label("Settings", systemImage: "gearshape")
                 }
             }
         }
@@ -966,7 +1045,7 @@ private struct PlannerSettingsView: View {
             Section("Preferences") {
                 Picker("Appearance", selection: $appearance) {
                     Text("System").tag("System"); Text("Light").tag("Light"); Text("Dark").tag("Dark")
-                }
+                }.pickerStyle(.navigationLink)
                 Toggle("Haptic feedback", isOn: $haptics)
                 Text("Dates follow your device's calendar day. Unfinished tasks stay on their original date until you move them.")
                     .font(.footnote).foregroundStyle(.secondary)
@@ -980,8 +1059,10 @@ private struct PlannerSettingsView: View {
                                 do { try model.saveNote(restored, expected: note) } catch { self.error = error.localizedDescription }
                             }
                         }
-                        if model.state.dayNotes.allSatisfy({ !$0.isArchived }) { Text("Trash is empty.").foregroundStyle(.secondary) }
-                    }.navigationTitle("Trash")
+                        if model.state.dayNotes.allSatisfy({ !$0.isArchived }) {
+                            PlannerEmptyState(symbol: "trash", title: "Trash is empty", detail: "Notes you remove can be restored here.")
+                        }
+                    }.modifier(PlannerListLayout()).navigationTitle("Trash").navigationBarTitleDisplayMode(.inline)
                 }
                 NavigationLink("Removed tasks") {
                     List {
@@ -991,8 +1072,10 @@ private struct PlannerSettingsView: View {
                                 do { try model.updateOccurrence(restored) } catch { self.error = error.localizedDescription }
                             }
                         }
-                        if model.state.planOccurrences.allSatisfy({ !$0.isRemoved }) { Text("No removed tasks.").foregroundStyle(.secondary) }
-                    }.navigationTitle("Removed tasks")
+                        if model.state.planOccurrences.allSatisfy({ !$0.isRemoved }) {
+                            PlannerEmptyState(symbol: "checklist", title: "No removed tasks", detail: "Removed tasks can be restored here.")
+                        }
+                    }.modifier(PlannerListLayout()).navigationTitle("Removed tasks").navigationBarTitleDisplayMode(.inline)
                 }
                 NavigationLink("Archived routines") {
                     List {
@@ -1001,23 +1084,29 @@ private struct PlannerSettingsView: View {
                                 do { try model.restorePlannerRoutine(routine) } catch { self.error = error.localizedDescription }
                             }
                         }
-                    }.navigationTitle("Archived routines")
+                        if model.state.routines.allSatisfy({ !$0.isArchived }) {
+                            PlannerEmptyState(symbol: "archivebox", title: "No archived routines", detail: "Archived checklists can be restored here.")
+                        }
+                    }.modifier(PlannerListLayout()).navigationTitle("Archived routines").navigationBarTitleDisplayMode(.inline)
                 }
             }
             Section("Previous records") {
-                Text("Existing tasks and routine history have been retained. Old habit records are kept internally for compatibility; Habits is no longer a separate section.")
-                    .font(.footnote).foregroundStyle(.secondary)
                 NavigationLink("Previous routine sessions") {
-                    List(model.state.routineHistory.sorted { $0.endedAt > $1.endedAt }, id: \.startedAt) { run in
+                    List {
+                      ForEach(model.state.routineHistory.sorted { $0.endedAt > $1.endedAt }, id: \.startedAt) { run in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(model.state.routine(id: run.routineID)?.title ?? "Previous routine")
                             Text(run.endedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
                             Text("\(run.outcomes.filter { $0 == .completed }.count) of \(run.outcomes.count) steps completed").font(.caption).foregroundStyle(.secondary)
                         }
-                    }.navigationTitle("Previous sessions")
+                      }
+                      if model.state.routineHistory.isEmpty {
+                          PlannerEmptyState(symbol: "clock", title: "No previous sessions", detail: "Earlier routine sessions appear here.")
+                      }
+                    }.modifier(PlannerListLayout()).navigationTitle("Previous sessions").navigationBarTitleDisplayMode(.inline)
                 }
             }
-        }.modifier(PlannerFormLayout()).navigationTitle("Settings")
+        }.modifier(PlannerFormLayout()).navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
         .alert("Could not restore", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) { error = nil }
         } message: { Text(error ?? "") }
