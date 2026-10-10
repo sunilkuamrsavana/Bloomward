@@ -3,6 +3,61 @@ import ClerkKitUI
 import RoutineCore
 import SwiftUI
 
+private enum PlannerStyle {
+    static let canvas = adaptive(
+        light: UIColor(red: 0.97, green: 0.965, blue: 0.95, alpha: 1),
+        dark: UIColor(red: 0.075, green: 0.085, blue: 0.08, alpha: 1)
+    )
+    static let surface = adaptive(
+        light: .white,
+        dark: UIColor(red: 0.12, green: 0.135, blue: 0.125, alpha: 1)
+    )
+    static let accent = adaptive(
+        light: UIColor(red: 0.20, green: 0.37, blue: 0.29, alpha: 1),
+        dark: UIColor(red: 0.62, green: 0.79, blue: 0.68, alpha: 1)
+    )
+
+    private static func adaptive(light: UIColor, dark: UIColor) -> Color {
+        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
+    }
+}
+
+private struct PlannerIcon: View {
+    let symbol: String
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.body.weight(.medium))
+            .foregroundStyle(PlannerStyle.accent)
+            .frame(width: 40, height: 40)
+            .background(PlannerStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityHidden(true)
+    }
+}
+
+private struct PlannerEmptyState: View {
+    let symbol: String
+    let title: String
+    let detail: String
+    var actionTitle: String? = nil
+    var action: () -> Void = {}
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            PlannerIcon(symbol: symbol)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+            }
+            if let actionTitle {
+                Button(action: action) {
+                    Label(actionTitle, systemImage: "plus")
+                        .font(.body.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle)
+            }
+        }.padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 @MainActor
 struct AppShellView: View {
     @Environment(AppModel.self) private var model
@@ -22,6 +77,7 @@ struct AppShellView: View {
             NavigationStack { PlannerProfileView() }
                 .tabItem { Label("Profile", systemImage: selectedTab == 3 ? "person.crop.circle.fill" : "person.crop.circle").environment(\.symbolVariants, .none) }.tag(3)
         }
+        .tint(PlannerStyle.accent)
         .preferredColorScheme(appearance == "System" ? nil : appearance == "Dark" ? .dark : .light)
         .onReceive(clock) { _ in model.refreshDay() }
         .onChange(of: scenePhase) { _, phase in
@@ -34,13 +90,27 @@ struct AppShellView: View {
 private struct PlannerListLayout: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .listStyle(.plain)
-            .listSectionSpacing(0)
-            .environment(\.defaultMinListHeaderHeight, 24)
-            .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
+            .listStyle(.insetGrouped)
+            .listSectionSpacing(20)
+            .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+            .listRowBackground(PlannerStyle.surface)
             .listSectionSeparator(.hidden)
             .scrollContentBackground(.hidden)
-            .background(Color(uiColor: .systemBackground))
+            .background(PlannerStyle.canvas)
+            .tint(PlannerStyle.accent)
+            .toolbarBackground(PlannerStyle.canvas, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct PlannerFormLayout: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .listRowBackground(PlannerStyle.surface)
+            .scrollContentBackground(.hidden)
+            .background(PlannerStyle.canvas)
+            .tint(PlannerStyle.accent)
+            .toolbarBackground(PlannerStyle.canvas, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -49,12 +119,17 @@ private struct PlannerSectionTitle: View {
     let title: String
     var detail: String? = nil
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Color(uiColor: .label))
-            Spacer(minLength: 12)
-            if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-        }.textCase(nil)
-            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 4, trailing: 20))
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(.headline).foregroundStyle(.primary).fixedSize()
+                Spacer(minLength: 12)
+                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize() }
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.headline).foregroundStyle(.primary)
+                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+            }
+        }.textCase(nil).padding(.bottom, 6)
     }
 }
 
@@ -64,35 +139,49 @@ private struct PlannerDateBar: View {
     @State private var choosesDate = false
     var body: some View {
         @Bindable var model = model
-        HStack(spacing: 0) {
-            Button { choosesDate = true } label: {
-                HStack(spacing: 8) {
-                    Text(model.selectedPlanDay == model.plannerToday ? "Today" : model.selectedPlanDate.formatted(.dateTime.weekday(.abbreviated)))
-                        .font(.headline).foregroundStyle(.primary)
-                    Text(model.selectedPlanDate.formatted(.dateTime.month(.abbreviated).day()))
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                }.frame(minHeight: 44)
-            }.buttonStyle(.plain).accessibilityHint("Choose another date")
-            Spacer(minLength: 12)
-            Button { model.moveSelectedDate(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                .accessibilityLabel("Previous day")
-            Button { model.moveSelectedDate(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
-                .accessibilityLabel("Next day")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { dateButton.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 0); navigationButtons }
+            VStack(alignment: .leading, spacing: 8) {
+                dateButton
+                HStack { Spacer(); navigationButtons }
+            }
         }
-        .padding(.leading, 20).padding(.trailing, 8).padding(.vertical, 4)
-        .background(Color(uiColor: .systemBackground))
-        .overlay(alignment: .bottom) { Divider() }
+        .padding(.horizontal, 20).padding(.vertical, 10)
+        .background(PlannerStyle.canvas)
         .sheet(isPresented: $choosesDate) {
             NavigationStack {
                 Form {
                     DatePicker("Date", selection: $model.selectedPlanDate, displayedComponents: .date).datePickerStyle(.graphical)
                     Button("Go to today") { model.selectedPlanDate = Date(); choosesDate = false }
-                }.navigationTitle("Choose date").navigationBarTitleDisplayMode(.inline)
+                }.modifier(PlannerFormLayout()).navigationTitle("Choose date")
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { choosesDate = false } } }
             }.presentationDetents([.medium, .large])
         }
         .onChange(of: model.selectedPlanDay) { _, _ in model.prepareSelectedDay() }
+    }
+    private var dateButton: some View {
+        Button { choosesDate = true } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(model.selectedPlanDay == model.plannerToday ? "Today" : model.selectedPlanDate.formatted(.dateTime.weekday(.wide)))
+                        .font(.headline).foregroundStyle(.primary)
+                    Text(model.selectedPlanDate.formatted(.dateTime.month(.wide).day().year()))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            }.frame(minHeight: 44, alignment: .leading)
+        }.buttonStyle(.plain).accessibilityHint("Choose another date")
+    }
+    private var navigationButtons: some View {
+        HStack(spacing: 0) {
+            Button { model.moveSelectedDate(-1) } label: {
+                Image(systemName: "chevron.left").font(.subheadline.weight(.semibold)).frame(width: 44, height: 44)
+            }.accessibilityLabel("Previous day")
+            Divider().frame(height: 16)
+            Button { model.moveSelectedDate(1) } label: {
+                Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).frame(width: 44, height: 44)
+            }.accessibilityLabel("Next day")
+        }.background(PlannerStyle.surface, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -126,16 +215,13 @@ private struct PlannerDayView: View {
             }
             if model.selectedPlan.isEmpty {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Nothing planned yet").font(.body.weight(.medium))
-                        Text("Add a task, with or without a time.").font(.subheadline).foregroundStyle(.secondary)
-                        Button("Add a task", systemImage: "plus") { addsTask = true }.padding(.top, 4)
-                    }.padding(.vertical, 12)
-                } header: { PlannerSectionTitle(title: "Tasks") }
+                    PlannerEmptyState(symbol: "checklist", title: "Nothing planned yet",
+                        detail: "Start with a task, or bring a saved routine into your day.", actionTitle: "Add a task") { addsTask = true }
+                } header: { PlannerSectionTitle(title: "Your plan") }
             } else {
                 if !open.isEmpty {
                     Section { ForEach(open) { taskRow($0) } }
-                    header: { PlannerSectionTitle(title: "Tasks", detail: "\(model.selectedPlan.filter { $0.status == .completed }.count)/\(model.selectedPlan.count) done") }
+                    header: { PlannerSectionTitle(title: "To do", detail: "\(open.count) remaining") }
                 }
                 if !finished.isEmpty {
                     Section { ForEach(finished) { taskRow($0) } }
@@ -146,7 +232,12 @@ private struct PlannerDayView: View {
             if !notes.isEmpty {
                 Section {
                     ForEach(notes) { note in
-                        NavigationLink { PlannerNoteEditor(note: note) } label: { Label(note.displayTitle, systemImage: "doc.text") }
+                        NavigationLink { PlannerNoteEditor(note: note) } label: {
+                            HStack(spacing: 12) {
+                                PlannerIcon(symbol: "doc.text")
+                                Text(note.displayTitle).font(.body.weight(.medium))
+                            }.frame(minHeight: 44)
+                        }
                     }
                 } header: { PlannerSectionTitle(title: "Notes", detail: "\(notes.count)") }
             }
@@ -159,7 +250,7 @@ private struct PlannerDayView: View {
                 Menu {
                     Button("Add task", systemImage: "plus") { addsTask = true }
                     Button("Add routine", systemImage: "repeat") { addsRoutine = true }
-                } label: { Text("Add").fontWeight(.semibold) }.accessibilityLabel("Add to this day")
+                } label: { Label("Add", systemImage: "plus").fontWeight(.semibold) }.accessibilityLabel("Add to this day")
             }
         }
         .sheet(isPresented: $addsTask) { PlannerTaskEditor(day: model.selectedPlanDay) }
@@ -177,20 +268,37 @@ private struct PlannerDayView: View {
                 changed.steps = task.steps.map { PlanStep(id: $0.id, title: $0.title, isDone: changed.status == .completed, notes: $0.notes) }
                 do { try model.updateOccurrence(changed) } catch { self.error = error.localizedDescription }
             } label: {
-                Image(systemName: task.status == .completed ? "checkmark.circle.fill" : "circle").font(.system(size: 22)).frame(width: 44, height: 44)
+                Image(systemName: completionSymbol(task.status))
+                    .font(.system(size: 26, weight: .light))
+                    .foregroundStyle(task.status == .pending ? Color.secondary : PlannerStyle.accent)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
             }.buttonStyle(.borderless).disabled(task.status == .moved)
                 .accessibilityLabel(task.status == .completed ? "Undo \(task.title)" : "Complete \(task.title)")
             Button { editing = task } label: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(task.title).font(.body.weight(.medium)).foregroundStyle(.primary).strikethrough(task.status == .completed)
-                    if let minute = task.minute { Text(plannerTime(minute)).font(.caption).foregroundStyle(.secondary) }
-                    if !task.steps.isEmpty { Text("\(task.steps.filter(\.isDone).count) of \(task.steps.count) steps").font(.caption).foregroundStyle(.secondary) }
+                    Text(task.title).font(.body.weight(.medium))
+                        .foregroundStyle(task.status == .completed ? Color.secondary : Color.primary)
+                        .strikethrough(task.status == .completed)
+                    if let minute = task.minute { Label(plannerTime(minute), systemImage: "clock").font(.caption).foregroundStyle(.secondary) }
+                    if !task.steps.isEmpty {
+                        Label("\(task.steps.filter(\.isDone).count) of \(task.steps.count) steps", systemImage: "checklist")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     if task.status == .partial { Text("Partly done").font(.caption).foregroundStyle(.secondary) }
                     if task.status == .skipped { Text("Skipped").font(.caption).foregroundStyle(.secondary) }
                     if let day = task.movedTo { Text(verbatim: "Moved to \(day.month)/\(day.day)/\(day.year)").font(.caption).foregroundStyle(.secondary) }
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain)
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+        }
+    }
+    private func completionSymbol(_ status: PlanStatus) -> String {
+        switch status {
+        case .completed: "checkmark.circle.fill"
+        case .partial: "circle.lefthalf.filled"
+        case .skipped: "minus.circle"
+        case .moved: "arrow.right.circle"
+        case .pending: "circle"
         }
     }
 }
@@ -209,7 +317,7 @@ private struct PlannerWeekdays: View {
                 HStack {
                     Text(Calendar.current.weekdaySymbols[day - 1]).foregroundStyle(.primary)
                     Spacer(); if days.contains(day) { Image(systemName: "checkmark") }
-                }.frame(minHeight: 32).contentShape(Rectangle())
+                }.frame(minHeight: 44).contentShape(Rectangle())
             }.accessibilityAddTraits(days.contains(day) ? .isSelected : [])
         }
     }
@@ -270,13 +378,11 @@ private struct PlannerTaskEditor: View {
             Form {
                 Section("Task") {
                     TextField("Task name", text: $title).accessibilityLabel("Task name")
-                    TextField("Task notes (optional)", text: $notes, axis: .vertical).lineLimit(3...8)
                 }
-                Section("Time") {
+                Section {
                     Toggle("Set a time", isOn: $timed)
                     if timed { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
-                    Text("A planning time, not a notification.").font(.caption).foregroundStyle(.secondary)
-                }
+                } header: { Text("Time") } footer: { Text("A planning time, not a notification.") }
                 if occurrence == nil {
                     Section {
                         Toggle("Repeat", isOn: $repeats)
@@ -292,7 +398,10 @@ private struct PlannerTaskEditor: View {
                                 Button {
                                     step.isDone.toggle()
                                     status = steps.allSatisfy(\.isDone) ? .completed : steps.contains(where: \.isDone) ? .partial : .pending
-                                } label: { Image(systemName: step.isDone ? "checkmark.circle.fill" : "circle").frame(width: 44, height: 44) }
+                                } label: {
+                                    Image(systemName: step.isDone ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 26, weight: .light)).frame(width: 44, height: 44).contentShape(Rectangle())
+                                }
                                     .buttonStyle(.borderless).accessibilityLabel("Toggle \(step.title)")
                                     .disabled(status == .moved)
                             }
@@ -307,6 +416,9 @@ private struct PlannerTaskEditor: View {
                         Button("Add") { appendStep() }.disabled(newStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     if !newStep.isEmpty { Text("Tap Add to include this step before saving.").font(.caption).foregroundStyle(.secondary) }
+                }
+                Section("Notes") {
+                    TextField("Task notes (optional)", text: $notes, axis: .vertical).lineLimit(3...8)
                 }
                 if let occurrence {
                     Section {
@@ -331,11 +443,12 @@ private struct PlannerTaskEditor: View {
                 }
                 if let error { Section { Text(error).foregroundStyle(.red).textSelection(.enabled) } }
             }
+            .modifier(PlannerFormLayout())
             .navigationTitle(occurrence != nil ? "Task details" : series != nil ? "Repeating task" : "New task").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { if dirty { discards = true } else { dismiss() } } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.disabled(!canSave || model.localDataNeedsRecovery) }
-                ToolbarItem(placement: .bottomBar) { EditButton() }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.fontWeight(.semibold).disabled(!canSave || model.localDataNeedsRecovery) }
+                if !steps.isEmpty { ToolbarItem(placement: .bottomBar) { EditButton() } }
             }
             .confirmationDialog("Discard unsaved changes?", isPresented: $discards, titleVisibility: .visible) {
                 Button("Discard changes", role: .destructive) { dismiss() }
@@ -349,6 +462,7 @@ private struct PlannerTaskEditor: View {
             .sheet(isPresented: $moves) {
                 NavigationStack {
                     Form { DatePicker("Move to", selection: $moveDate, displayedComponents: .date) }
+                    .modifier(PlannerFormLayout())
                     .navigationTitle("Move task").navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { moves = false } }
@@ -408,7 +522,7 @@ private struct PlannerRoutinesView: View {
                 ForEach(visibleRoutines) { routine in
                     Button { editing = routine } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "repeat").font(.system(size: 22)).foregroundStyle(Color.accentColor).frame(width: 32)
+                            PlannerIcon(symbol: "repeat")
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(routine.title).font(.body.weight(.medium)).foregroundStyle(.primary)
                                 Text(routine.leafSteps.count == 1 ? "1 step" : "\(routine.leafSteps.count) steps").font(.caption).foregroundStyle(.secondary)
@@ -418,18 +532,16 @@ private struct PlannerRoutinesView: View {
                     }.buttonStyle(.plain)
                 }
                 if visibleRoutines.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(query.isEmpty ? "No routines yet" : "No matching routines").font(.body.weight(.medium))
-                        Text("Save a checklist to reuse on any day.").font(.subheadline).foregroundStyle(.secondary)
-                        if query.isEmpty { Button("Create routine", systemImage: "plus") { creates = true }.padding(.top, 4) }
-                    }.padding(.vertical, 12)
+                    PlannerEmptyState(symbol: "repeat", title: query.isEmpty ? "No routines yet" : "No matching routines",
+                        detail: query.isEmpty ? "Build a checklist once. Use it whenever you need it." : "Try a different routine name.",
+                        actionTitle: query.isEmpty ? "Create routine" : nil) { creates = true }
                 }
             } header: { PlannerSectionTitle(title: "Your routines", detail: "\(visibleRoutines.count)") }
             Section {
                 ForEach(repeatingTasks) { task in
                     Button { series = task } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "repeat").font(.system(size: 22)).foregroundStyle(Color.accentColor).frame(width: 32)
+                            PlannerIcon(symbol: "calendar.badge.clock")
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.title).font(.body.weight(.medium)).foregroundStyle(.primary)
                                 Text(task.endsOn == nil ? "Repeats on selected weekdays" : "Repetition stopped").font(.caption).foregroundStyle(.secondary)
@@ -448,7 +560,7 @@ private struct PlannerRoutinesView: View {
         .navigationTitle("Routines")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Add") { creates = true }.fontWeight(.semibold).accessibilityLabel("Add routine")
+                Button { creates = true } label: { Label("Add", systemImage: "plus").fontWeight(.semibold) }.accessibilityLabel("Add routine")
             }
         }
         .sheet(isPresented: $creates) { PlannerRoutineEditor() }
@@ -477,23 +589,23 @@ private struct PlannerRoutineEditor: View {
                     header: { Text("Checklist") } footer: { Text("Steps belong to this routine. No habit linking or separate setup is needed.") }
                 if let original {
                     Section {
-                        Button("Add to selected day") {
+                        Button {
                             do { try model.addRoutineToDay(original); added = true } catch { self.error = error.localizedDescription }
-                        }.disabled(dirty)
+                        } label: { Label("Add to selected day", systemImage: "calendar.badge.plus").frame(minHeight: 44) }.disabled(dirty)
                         Button("Archive routine", role: .destructive) { removes = true }
                     } footer: { Text("Adding makes a checklist for the selected date. Template edits won't change saved daily checklists.") }
                 }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
-            }.navigationTitle(original == nil ? "New routine" : "Edit routine").navigationBarTitleDisplayMode(.inline)
+            }.modifier(PlannerFormLayout()).navigationTitle(original == nil ? "New routine" : "Edit routine")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { if dirty { discards = true } else { dismiss() } } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         do { try model.createRoutine(RoutineDraft(routine: routine), updating: original != nil); dismiss() }
                         catch { self.error = error.localizedDescription }
-                    }.disabled(routine.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || routine.steps.isEmpty)
+                    }.fontWeight(.semibold).disabled(routine.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || routine.steps.isEmpty)
                 }
-                ToolbarItem(placement: .bottomBar) { EditButton() }
+                if !routine.steps.isEmpty { ToolbarItem(placement: .bottomBar) { EditButton() } }
             }
             .confirmationDialog("Discard unsaved changes?", isPresented: $discards, titleVisibility: .visible) {
                 Button("Discard changes", role: .destructive) { dismiss() }
@@ -527,16 +639,18 @@ private struct PlannerRoutineItems: View {
                             PlannerWeekdays(days: Binding(get: { step.schedule?.weekdays ?? Set(1...7) }, set: { step.schedule?.weekdays = $0 }))
                         }
                     } header: { Text("Availability") } footer: { Text("Leave off to include this step whenever the routine is planned. Choose days for different weekday checklists.") }
-                }.navigationTitle(step.children == nil ? "Step" : "Step group").navigationBarTitleDisplayMode(.inline)
+                }.modifier(PlannerFormLayout()).navigationTitle(step.children == nil ? "Step" : "Step group")
             } label: {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(step.title.isEmpty ? "Name this step" : step.title)
                     if let children = step.children { Text("\(children.count) steps").font(.caption).foregroundStyle(.secondary) }
-                }
+                }.frame(minHeight: 44)
             }
         }.onDelete { items.remove(atOffsets: $0) }.onMove { items.move(fromOffsets: $0, toOffset: $1) }
-        Button("Add step", systemImage: "plus") { items.append(RoutineStep(title: "")) }
-        if depth < 4 { Button("Add step group", systemImage: "folder.badge.plus") { items.append(RoutineStep(title: "", children: [])) } }
+        Button { items.append(RoutineStep(title: "")) } label: { Label("Add step", systemImage: "plus").frame(minHeight: 44) }
+        if depth < 4 {
+            Button { items.append(RoutineStep(title: "", children: [])) } label: { Label("Add step group", systemImage: "folder.badge.plus").frame(minHeight: 44) }
+        }
     }
 }
 
@@ -563,7 +677,7 @@ private struct PlannerRoutinePicker: View {
                 }
                 Button("Create a routine") { creates = true }
                 if let error { Text(error).foregroundStyle(.red) }
-            }.navigationTitle("Add routine").navigationBarTitleDisplayMode(.inline)
+            }.modifier(PlannerListLayout()).navigationTitle("Add routine")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .sheet(isPresented: $creates) { PlannerRoutineEditor() }
             .sheet(item: $selected) { routine in
@@ -594,7 +708,7 @@ private struct PlannerAddRoutineForm: View {
                     if repeats { PlannerWeekdays(days: $weekdays) }
                 } footer: { Text("Each date keeps its own checklist and progress. Day-specific steps are included only on their selected weekdays.") }
                 if let error { Text(error).foregroundStyle(.red) }
-            }.navigationTitle("Plan routine").navigationBarTitleDisplayMode(.inline)
+            }.modifier(PlannerFormLayout()).navigationTitle("Plan routine")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -622,21 +736,20 @@ private struct PlannerNotesView: View {
         List {
             if notes.isEmpty {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(query.isEmpty ? "No notes for this day" : "No matching notes").font(.body.weight(.medium))
-                        Text("Keep separate pages for thoughts, ideas, or plans.").font(.subheadline).foregroundStyle(.secondary)
-                        if query.isEmpty { Button("Write a note", systemImage: "square.and.pencil") { creates = true }.padding(.top, 4) }
-                    }.padding(.vertical, 12)
+                    PlannerEmptyState(symbol: "square.and.pencil", title: query.isEmpty ? "No notes for this day" : "No matching notes",
+                        detail: query.isEmpty ? "Capture an idea, make a plan, or reflect on this day. Notes save as you write." : "Try another word from the title or text.",
+                        actionTitle: query.isEmpty ? "Write a note" : nil) { creates = true }
                 } header: { PlannerSectionTitle(title: "Day notes", detail: "0") }
             }
             if !notes.isEmpty {
                 Section {
                     ForEach(notes) { note in
                         NavigationLink { PlannerNoteEditor(note: note) } label: {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 Text(note.displayTitle).font(.body.weight(.medium))
-                                Text(note.body).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-                                Text(note.updatedAt.formatted(date: .omitted, time: .shortened)).font(.caption).foregroundStyle(.tertiary)
+                                if !note.body.isEmpty { Text(note.body).font(.subheadline).foregroundStyle(.secondary).lineLimit(2) }
+                                Label(note.updatedAt.formatted(date: .omitted, time: .shortened), systemImage: "doc.text")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }.padding(.vertical, 4)
                         }
                     }
@@ -649,7 +762,7 @@ private struct PlannerNotesView: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search this day's notes")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("New") { creates = true }.fontWeight(.semibold).accessibilityLabel("New note")
+                Button { creates = true } label: { Label("New", systemImage: "square.and.pencil").fontWeight(.semibold) }.accessibilityLabel("New note")
                 }
         }
         .sheet(isPresented: $creates) { NavigationStack { PlannerNoteEditor(note: DayNote(day: model.selectedPlanDay)) } }
@@ -669,16 +782,29 @@ private struct PlannerNoteEditor: View {
     @State private var discards = false
     init(note: DayNote) { _draft = State(initialValue: note) }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(verbatim: "\(draft.day.month)/\(draft.day.day)/\(draft.day.year)").font(.caption).foregroundStyle(.secondary)
-            TextField("Title (optional)", text: $draft.title).font(.title2.weight(.semibold)).accessibilityLabel("Note title")
+        VStack(alignment: .leading, spacing: 16) {
+            Label(noteDate, systemImage: "calendar").font(.caption).foregroundStyle(.secondary)
+            TextField("Title (optional)", text: $draft.title, axis: .vertical)
+                .font(.title2.weight(.semibold)).accessibilityLabel("Note title")
             Divider()
-            TextEditor(text: $draft.body).accessibilityLabel("Note text").scrollContentBackground(.hidden)
+            ZStack(alignment: .topLeading) {
+                if draft.body.isEmpty {
+                    Text("What's on your mind?").foregroundStyle(.secondary)
+                        .padding(.top, 8).padding(.leading, 5).allowsHitTesting(false).accessibilityHidden(true)
+                }
+                TextEditor(text: $draft.body).accessibilityLabel("Note text").scrollContentBackground(.hidden)
+            }
             if let error { Text(error).font(.footnote).foregroundStyle(.red).textSelection(.enabled) }
-            else { Text(expected == nil ? "Start writing to save this note." : model.cloudSync?.status ?? "Saved on this iPhone.").font(.caption).foregroundStyle(.secondary) }
-        }.padding(20).navigationTitle("Note").navigationBarTitleDisplayMode(.inline)
+            else {
+                Label(expected == nil ? "Start writing to save this note." : model.cloudSync?.status ?? "Saved on this iPhone.",
+                    systemImage: expected == nil ? "pencil" : "checkmark.circle")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }.padding(20).background(PlannerStyle.surface).tint(PlannerStyle.accent)
+        .toolbarBackground(PlannerStyle.surface, for: .navigationBar)
+        .navigationTitle("Note").navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .confirmationAction) { Button("Done") { save(); if error == nil { dismiss() } } }
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { save(); if error == nil { dismiss() } }.fontWeight(.semibold) }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Move to Trash", systemImage: "trash", role: .destructive) { trash = true }
@@ -697,6 +823,10 @@ private struct PlannerNoteEditor: View {
         .confirmationDialog("Close without saving your changes?", isPresented: $discards, titleVisibility: .visible) {
             Button("Close without saving", role: .destructive) { dismiss() }
         } message: { Text("Copy your text first if you want to keep it. The saved version remains unchanged.") }
+    }
+    private var noteDate: String {
+        let date = Calendar.current.date(from: DateComponents(year: draft.day.year, month: draft.day.month, day: draft.day.day))
+        return date?.formatted(date: .abbreviated, time: .omitted) ?? "Selected date"
     }
     private func save() {
         guard initialized else { return }
@@ -718,14 +848,14 @@ private struct PlannerProfileAvatar: View {
     }
     var body: some View {
         ZStack {
-            Circle().fill(Color.accentColor.opacity(0.12))
+            Circle().fill(PlannerStyle.accent.opacity(0.12))
             if let initial = name.first {
                 Text(String(initial).uppercased()).font(.system(size: size * 0.4, weight: .semibold))
             } else {
                 Image(systemName: "person.fill").font(.system(size: size * 0.42, weight: .medium))
             }
         }
-        .foregroundStyle(Color.accentColor)
+        .foregroundStyle(PlannerStyle.accent)
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
@@ -756,7 +886,7 @@ private struct PlannerProfileView: View {
         List {
             Section {
                 HStack(spacing: 16) {
-                    PlannerProfileAvatar(size: 64)
+                    PlannerProfileAvatar(size: 56)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(displayName).font(.title3.weight(.semibold))
                         Text(account.email ?? (account.userID == nil ? "Using this iPhone without an account" : "Signed in"))
@@ -887,7 +1017,7 @@ private struct PlannerSettingsView: View {
                     }.navigationTitle("Previous sessions")
                 }
             }
-        }.modifier(PlannerListLayout()).navigationTitle("Settings")
+        }.modifier(PlannerFormLayout()).navigationTitle("Settings")
         .alert("Could not restore", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) { error = nil }
         } message: { Text(error ?? "") }
@@ -900,18 +1030,38 @@ struct PlannerWelcomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Image(systemName: "checklist").font(.system(size: 44)).accessibilityHidden(true)
-                    Text("Your day, in one place.").font(.largeTitle.bold())
-                    Text("Plan tasks, reuse routines, and keep notes for each day.").font(.title3).foregroundStyle(.secondary)
-                    Label("Add tasks with or without a time", systemImage: "checkmark.circle")
-                    Label("Keep reusable checklists", systemImage: "list.bullet.rectangle")
-                    Label("Write separate notes for each date", systemImage: "note.text")
-                    Button("Start planning", action: start).buttonStyle(.borderedProminent).controlSize(.large)
-                    Button("Sign in", action: signIn).frame(minHeight: 44)
-                    Text("No account required. Enable cloud sync later if you want it.").font(.footnote).foregroundStyle(.secondary)
-                }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
-            }.navigationTitle("Bloomward")
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        PlannerIcon(symbol: "leaf")
+                        Text("Your day, in one place.").font(.title.weight(.semibold))
+                        Text("A calmer way to plan, follow through, and collect your thoughts.")
+                            .font(.body).foregroundStyle(.secondary)
+                    }
+                    VStack(alignment: .leading, spacing: 20) {
+                        welcomeRow("Tasks", detail: "Plan what matters, with or without a time.", symbol: "checkmark.circle")
+                        welcomeRow("Routines", detail: "Keep checklists you can return to.", symbol: "repeat")
+                        welcomeRow("Notes", detail: "Give each day's thoughts a home.", symbol: "doc.text")
+                    }
+                    VStack(spacing: 12) {
+                        Button(action: start) {
+                            Text("Start planning").fontWeight(.semibold).frame(maxWidth: .infinity, minHeight: 44)
+                        }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle)
+                        Button("Sign in", action: signIn).frame(maxWidth: .infinity, minHeight: 44)
+                        Text("No account required. Back up your plan later if you want to.")
+                            .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    }
+                }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
+            }.background(PlannerStyle.canvas).navigationTitle("Bloomward").navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(PlannerStyle.canvas, for: .navigationBar)
+        }.tint(PlannerStyle.accent)
+    }
+    private func welcomeRow(_ title: String, detail: String, symbol: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            PlannerIcon(symbol: symbol)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+            }
         }
     }
 }
@@ -943,7 +1093,7 @@ struct PlannerLoginView: View {
                     Button("Continue on this iPhone") { account.endPresentation(); continueLocally() }.frame(minHeight: 44)
                     Text("Guest data and account data stay separate unless you explicitly choose to import. Local data is lost if you uninstall the app.").font(.footnote).foregroundStyle(.secondary)
                 }
-            }.navigationTitle("Account").navigationBarTitleDisplayMode(.inline)
+            }.modifier(PlannerListLayout()).navigationTitle("Account")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { account.endPresentation(); dismiss() }.disabled(account.isBusy) } }
             .sheet(isPresented: $email, onDismiss: { account.endPresentation() }) { AccountFlowView(signInOnly: false) }
         }.interactiveDismissDisabled(account.isBusy)
