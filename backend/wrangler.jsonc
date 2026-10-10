@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bloomward-api-local",
+  "main": "src/index.ts",
+  "account_id": "36be7c1a54d196cbf30e4b923fb82fb8",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "secrets": { "required": ["CLERK_WEBHOOK_SIGNING_SECRET"] },
+  "vars": {
+    "APP_HOST": "bloomward.inqox.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bloomward-db-local",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  },
+  "env": {
+    "production": {
+      "name": "bloomward-api",
+      "workers_dev": true,
+      "preview_urls": false,
+      "secrets": { "required": ["CLERK_WEBHOOK_SIGNING_SECRET"] },
+      "routes": [
+        { "pattern": "bloomward.inqox.com", "custom_domain": true },
+        { "pattern": "api.bloomward.inqox.com", "custom_domain": true }
+      ],
+      "vars": {
+        "APP_HOST": "bloomward.inqox.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "bloomward-db",
+          "database_id": "36fc82c4-9fa6-43b6-b1f8-3c95b2202d46"
+        }
+      ]
+    }
+  }
+}

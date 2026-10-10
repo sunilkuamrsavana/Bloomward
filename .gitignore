@@ -1,0 +1,39 @@
+# macOS and editor state
+.DS_Store
+*.swp
+*.swo
+
+# Swift and Xcode generated files
+.build/
+.swiftpm/
+DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xcresult/
+*.ipa
+*.dSYM/
+
+# Local previews, screenshots, logs, and build tooling output
+work/
+outputs/
+*.log
+
+# JavaScript and Cloudflare generated files
+**/node_modules/
+**/.wrangler/
+**/dist/
+**/coverage/
+
+# Credentials and local environment files (never commit)
+.env
+.env.*
+**/.env
+**/.env.*
+.dev.vars*
+**/.dev.vars*
+*.p8
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileprovision

@@ -1,0 +1,580 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B40000000000000000000001 /* PlannerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40000000000000000000002 /* PlannerViews.swift */; };
+		B30000000000000000000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000002 /* OnboardingView.swift */; };
+		B30000000000000000000003 /* FirstDayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000004 /* FirstDayView.swift */; };
+		B30000000000000000000005 /* HabitReminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30000000000000000000006 /* HabitReminders.swift */; };
+		B20000000000000000000001 /* CloudSyncModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* CloudSyncModel.swift */; };
+		B10000000000000000000004 /* AccountModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* AccountModel.swift */; };
+		B10000000000000000000006 /* AccountFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* AccountFlowView.swift */; };
+		B10000000000000000000008 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000009 /* ClerkKitUI */; };
+		B10000000000000000000001 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = B10000000000000000000002 /* ClerkKit */; };
+		F10B94A62E10200100000003 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10B94A62E10200100000004 /* LoginView.swift */; };
+		F10B94A62E10200100000001 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10B94A62E10200100000002 /* WelcomeView.swift */; };
+		17D35F8143BFFCFD70AFBF9F /* RoutineCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6FC4B4963D24D6D77D5DECB2 /* RoutineCore */; };
+		1B7480C843ACE6B0ACD21D19 /* DaymarkProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691D038EF43445A28B174AFD /* DaymarkProgressRing.swift */; };
+		3515ADBE923E794F3CBAB493 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85A731D23A58C8F08309D49 /* SettingsView.swift */; };
+		421DB15C1B7F0B5381DC6639 /* DaymarkHabitRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF15890B17B02199788DE44E /* DaymarkHabitRow.swift */; };
+		56AAB9CDF1D53519AE6F37F7 /* DaymarkRoutineRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47C7E84DFC49BB5A1C96A9EC /* DaymarkRoutineRow.swift */; };
+		597D5441F33C5D26D54EC393 /* HabitsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BAC11011D6298F1474C510E /* HabitsView.swift */; };
+		5B2FE32CE47F32399091D473 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3F0219426AA3853780FF7F /* InsightsView.swift */; };
+		691938C65B534B1D7BE446DA /* RoutineRunnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2E7AAF615575B8475D941FC /* RoutineRunnerView.swift */; };
+		7566F1C029C83BB0134B0CBD /* DaymarkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A21D541CB0AD0B0B2577A4 /* DaymarkApp.swift */; };
+		7705C7B70575A466B1F976EE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3F634D29A3C17FEDA576DCFC /* Preview Assets.xcassets */; };
+		7D0B2E037637DC7806C06756 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6E7A90F75F9D76F329EE0A66 /* Assets.xcassets */; };
+		81C82A1683487C997439D1A4 /* DaymarkBotanicalAccent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAA3AF6892F45B78C6FD22E /* DaymarkBotanicalAccent.swift */; };
+		86CDBF0D537ACA0EA051C7BC /* DaymarkSectionTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4044F6472FB1AFDEF7AF77A /* DaymarkSectionTitle.swift */; };
+		884A9A7B87075DE47DBE4778 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AF5915B4EB35AD8CC4DA834 /* TodayView.swift */; };
+		8ADEFF3C99B457C35D16B2E4 /* DaymarkTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67470055BC30DEFA8F10E675 /* DaymarkTheme.swift */; };
+		9A95435EC40CD08726A44C93 /* DaymarkEditorialSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3281E747F58F01CF1A04D38C /* DaymarkEditorialSurface.swift */; };
+		A29BF8C35A80EE79E76DC181 /* RoutinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A604068A95838B0BAE3A032 /* RoutinesView.swift */; };
+		B7A5679C9A3EEAE226004068 /* AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAC62096B75EFC59B43457C /* AppShellView.swift */; };
+		C3D98A0C58028220DB59FE05 /* DaymarkLandscapeHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2285B5F04403E209F43F40BA /* DaymarkLandscapeHeader.swift */; };
+		DE7EB6AAAC9A9A339B6488EF /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A56B00111FBFDB24D29B8C /* AppModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B40000000000000000000002 /* PlannerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerViews.swift; sourceTree = "<group>"; };
+		B30000000000000000000002 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B30000000000000000000004 /* FirstDayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstDayView.swift; sourceTree = "<group>"; };
+		B30000000000000000000006 /* HabitReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitReminders.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* CloudSyncModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncModel.swift; sourceTree = "<group>"; };
+		B10000000000000000000005 /* AccountModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountModel.swift; sourceTree = "<group>"; };
+		B10000000000000000000007 /* AccountFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountFlowView.swift; sourceTree = "<group>"; };
+		F10B94A62E10200100000004 /* LoginView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		F10B94A62E10200100000002 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		2285B5F04403E209F43F40BA /* DaymarkLandscapeHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkLandscapeHeader.swift; sourceTree = "<group>"; };
+		2A604068A95838B0BAE3A032 /* RoutinesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoutinesView.swift; sourceTree = "<group>"; };
+		2AAA3AF6892F45B78C6FD22E /* DaymarkBotanicalAccent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkBotanicalAccent.swift; sourceTree = "<group>"; };
+		2AF5915B4EB35AD8CC4DA834 /* TodayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		3281E747F58F01CF1A04D38C /* DaymarkEditorialSurface.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkEditorialSurface.swift; sourceTree = "<group>"; };
+		3F634D29A3C17FEDA576DCFC /* Preview Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		47C7E84DFC49BB5A1C96A9EC /* DaymarkRoutineRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkRoutineRow.swift; sourceTree = "<group>"; };
+		5BAC11011D6298F1474C510E /* HabitsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitsView.swift; sourceTree = "<group>"; };
+		67470055BC30DEFA8F10E675 /* DaymarkTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkTheme.swift; sourceTree = "<group>"; };
+		691D038EF43445A28B174AFD /* DaymarkProgressRing.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkProgressRing.swift; sourceTree = "<group>"; };
+		6E7A90F75F9D76F329EE0A66 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		96A56B00111FBFDB24D29B8C /* AppModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		AB8DB76D26F109D320342080 /* Daymark.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Daymark.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B85A731D23A58C8F08309D49 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C2E7AAF615575B8475D941FC /* RoutineRunnerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RoutineRunnerView.swift; sourceTree = "<group>"; };
+		C5A21D541CB0AD0B0B2577A4 /* DaymarkApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkApp.swift; sourceTree = "<group>"; };
+		CE3F0219426AA3853780FF7F /* InsightsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		DDAC62096B75EFC59B43457C /* AppShellView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppShellView.swift; sourceTree = "<group>"; };
+		E4044F6472FB1AFDEF7AF77A /* DaymarkSectionTitle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkSectionTitle.swift; sourceTree = "<group>"; };
+		EF15890B17B02199788DE44E /* DaymarkHabitRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkHabitRow.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		991DA2063492CC24E99C5117 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				17D35F8143BFFCFD70AFBF9F /* RoutineCore in Frameworks */,
+				B10000000000000000000001 /* ClerkKit in Frameworks */,
+				B10000000000000000000008 /* ClerkKitUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		11E43BBD2F762CDF3C08B3E5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FE4E065208816CDA2B947AAB /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		1CCFADEAE429E6E89EE05CE9 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				67470055BC30DEFA8F10E675 /* DaymarkTheme.swift */,
+			);
+			name = Theme;
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		3F926C4CFF58B31029B98F61 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				E861187D3483F59875307804 /* Screens */,
+				1CCFADEAE429E6E89EE05CE9 /* Theme */,
+				44725869693F17B0C44B7D42 /* Components */,
+			);
+			name = UI;
+			path = UI;
+			sourceTree = "<group>";
+		};
+		44725869693F17B0C44B7D42 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				2AAA3AF6892F45B78C6FD22E /* DaymarkBotanicalAccent.swift */,
+				3281E747F58F01CF1A04D38C /* DaymarkEditorialSurface.swift */,
+				EF15890B17B02199788DE44E /* DaymarkHabitRow.swift */,
+				2285B5F04403E209F43F40BA /* DaymarkLandscapeHeader.swift */,
+				691D038EF43445A28B174AFD /* DaymarkProgressRing.swift */,
+				47C7E84DFC49BB5A1C96A9EC /* DaymarkRoutineRow.swift */,
+				E4044F6472FB1AFDEF7AF77A /* DaymarkSectionTitle.swift */,
+			);
+			name = Components;
+			path = Components;
+			sourceTree = "<group>";
+		};
+		4D91918CA7F85FC7A66D1BFE /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				3F634D29A3C17FEDA576DCFC /* Preview Assets.xcassets */,
+			);
+			name = "Preview Content";
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		8883C90882CEBED6D0E5CA47 = {
+			isa = PBXGroup;
+			children = (
+				EFB14D991D16BE4160057B6D /* Products */,
+				11E43BBD2F762CDF3C08B3E5 /* Frameworks */,
+				A0D3CA27210EC87085EEFE1C /* Daymark */,
+			);
+			sourceTree = "<group>";
+		};
+		A0D3CA27210EC87085EEFE1C /* Daymark */ = {
+			isa = PBXGroup;
+			children = (
+				CC7A145BA63BC5FECAE9EE04 /* App */,
+				3F926C4CFF58B31029B98F61 /* UI */,
+				FABFEA58E3C7172437479940 /* Resources */,
+			);
+			name = Daymark;
+			path = Daymark;
+			sourceTree = "<group>";
+		};
+		CC7A145BA63BC5FECAE9EE04 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				96A56B00111FBFDB24D29B8C /* AppModel.swift */,
+				B30000000000000000000006 /* HabitReminders.swift */,
+				B20000000000000000000002 /* CloudSyncModel.swift */,
+				B10000000000000000000005 /* AccountModel.swift */,
+				C5A21D541CB0AD0B0B2577A4 /* DaymarkApp.swift */,
+			);
+			name = App;
+			path = App;
+			sourceTree = "<group>";
+		};
+		E861187D3483F59875307804 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				B40000000000000000000002 /* PlannerViews.swift */,
+				DDAC62096B75EFC59B43457C /* AppShellView.swift */,
+				B30000000000000000000002 /* OnboardingView.swift */,
+				B30000000000000000000004 /* FirstDayView.swift */,
+				F10B94A62E10200100000002 /* WelcomeView.swift */,
+				F10B94A62E10200100000004 /* LoginView.swift */,
+				B10000000000000000000007 /* AccountFlowView.swift */,
+				5BAC11011D6298F1474C510E /* HabitsView.swift */,
+				CE3F0219426AA3853780FF7F /* InsightsView.swift */,
+				C2E7AAF615575B8475D941FC /* RoutineRunnerView.swift */,
+				2A604068A95838B0BAE3A032 /* RoutinesView.swift */,
+				B85A731D23A58C8F08309D49 /* SettingsView.swift */,
+				2AF5915B4EB35AD8CC4DA834 /* TodayView.swift */,
+			);
+			name = Screens;
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		EFB14D991D16BE4160057B6D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AB8DB76D26F109D320342080 /* Daymark.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FABFEA58E3C7172437479940 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6E7A90F75F9D76F329EE0A66 /* Assets.xcassets */,
+				4D91918CA7F85FC7A66D1BFE /* Preview Content */,
+			);
+			name = Resources;
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		FE4E065208816CDA2B947AAB /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EB6939BFB1BDFB4E081E699E /* Daymark */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A316DA4EFA8FB840BE02FBD6 /* Build configuration list for PBXNativeTarget "Daymark" */;
+			buildPhases = (
+				8D0F47755031726D2FD30DC0 /* Sources */,
+				991DA2063492CC24E99C5117 /* Frameworks */,
+				AA91DD07DE31DEAEE56EC908 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Daymark;
+			packageProductDependencies = (
+				B10000000000000000000009 /* ClerkKitUI */,
+				6FC4B4963D24D6D77D5DECB2 /* RoutineCore */,
+				B10000000000000000000002 /* ClerkKit */,
+			);
+			productName = Daymark;
+			productReference = AB8DB76D26F109D320342080 /* Daymark.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E90EBB16CBFD20BEBEDC6CC3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					EB6939BFB1BDFB4E081E699E = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = D888D6F5BF8AC06341DC8354 /* Build configuration list for PBXProject "Daymark" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8883C90882CEBED6D0E5CA47;
+			minimizedProjectReferenceProxies = 0;
+			packageReferences = (
+				575ABD41BDA7203DE1203BB3 /* XCLocalSwiftPackageReference "." */,
+				B10000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+			);
+			preferredProjectObjectVersion = 60;
+			productRefGroup = EFB14D991D16BE4160057B6D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EB6939BFB1BDFB4E081E699E /* Daymark */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA91DD07DE31DEAEE56EC908 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D0B2E037637DC7806C06756 /* Assets.xcassets in Resources */,
+				7705C7B70575A466B1F976EE /* Preview Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D0F47755031726D2FD30DC0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000004 /* AccountModel.swift in Sources */,
+				B30000000000000000000001 /* OnboardingView.swift in Sources */,
+				B30000000000000000000003 /* FirstDayView.swift in Sources */,
+				B30000000000000000000005 /* HabitReminders.swift in Sources */,
+				B10000000000000000000006 /* AccountFlowView.swift in Sources */,
+				DE7EB6AAAC9A9A339B6488EF /* AppModel.swift in Sources */,
+				B20000000000000000000001 /* CloudSyncModel.swift in Sources */,
+				7566F1C029C83BB0134B0CBD /* DaymarkApp.swift in Sources */,
+				B7A5679C9A3EEAE226004068 /* AppShellView.swift in Sources */,
+				B40000000000000000000001 /* PlannerViews.swift in Sources */,
+				F10B94A62E10200100000001 /* WelcomeView.swift in Sources */,
+				F10B94A62E10200100000003 /* LoginView.swift in Sources */,
+				597D5441F33C5D26D54EC393 /* HabitsView.swift in Sources */,
+				5B2FE32CE47F32399091D473 /* InsightsView.swift in Sources */,
+				691938C65B534B1D7BE446DA /* RoutineRunnerView.swift in Sources */,
+				A29BF8C35A80EE79E76DC181 /* RoutinesView.swift in Sources */,
+				3515ADBE923E794F3CBAB493 /* SettingsView.swift in Sources */,
+				884A9A7B87075DE47DBE4778 /* TodayView.swift in Sources */,
+				8ADEFF3C99B457C35D16B2E4 /* DaymarkTheme.swift in Sources */,
+				81C82A1683487C997439D1A4 /* DaymarkBotanicalAccent.swift in Sources */,
+				9A95435EC40CD08726A44C93 /* DaymarkEditorialSurface.swift in Sources */,
+				421DB15C1B7F0B5381DC6639 /* DaymarkHabitRow.swift in Sources */,
+				C3D98A0C58028220DB59FE05 /* DaymarkLandscapeHeader.swift in Sources */,
+				1B7480C843ACE6B0ACD21D19 /* DaymarkProgressRing.swift in Sources */,
+				56AAB9CDF1D53519AE6F37F7 /* DaymarkRoutineRow.swift in Sources */,
+				86CDBF0D537ACA0EA051C7BC /* DaymarkSectionTitle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B016B5D945783DE7D29C4B8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C7F17BF2D5E4950A032C1E50 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		DC8F265A0F614084FAA43225 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Daymark/Resources/Bloomward.entitlements;
+				DEVELOPMENT_TEAM = A9N7R3TRCA;
+				INFOPLIST_FILE = Daymark/Resources/Info.plist;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Daymark/Resources/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloomward;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inqox.bloomward;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F1F8647217DFEEDD807E6CB9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Daymark/Resources/Bloomward.entitlements;
+				DEVELOPMENT_TEAM = A9N7R3TRCA;
+				INFOPLIST_FILE = Daymark/Resources/Info.plist;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Daymark/Resources/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Bloomward;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inqox.bloomward;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A316DA4EFA8FB840BE02FBD6 /* Build configuration list for PBXNativeTarget "Daymark" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1F8647217DFEEDD807E6CB9 /* Release */,
+				DC8F265A0F614084FAA43225 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D888D6F5BF8AC06341DC8354 /* Build configuration list for PBXProject "Daymark" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B016B5D945783DE7D29C4B8C /* Debug */,
+				C7F17BF2D5E4950A032C1E50 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		575ABD41BDA7203DE1203BB3 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B10000000000000000000009 /* ClerkKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B10000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKitUI;
+		};
+		B10000000000000000000002 /* ClerkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B10000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = ClerkKit;
+		};
+		6FC4B4963D24D6D77D5DECB2 /* RoutineCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 575ABD41BDA7203DE1203BB3 /* XCLocalSwiftPackageReference "." */;
+			productName = RoutineCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+/* Begin XCRemoteSwiftPackageReference section */
+		B10000000000000000000003 /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = { kind = exactVersion; version = 1.5.5; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+	};
+	rootObject = E90EBB16CBFD20BEBEDC6CC3 /* Project object */;
+}

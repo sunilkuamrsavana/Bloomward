@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "WelcomeLandscape.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
