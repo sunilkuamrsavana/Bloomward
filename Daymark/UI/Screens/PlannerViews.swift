@@ -1117,41 +1117,39 @@ struct PlannerWelcomeView: View {
     let start: () -> Void
     let signIn: () -> Void
     var body: some View {
-        NavigationStack {
+        GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        PlannerIcon(symbol: "leaf")
-                        Text("Your day, in one place.").font(.title.weight(.semibold))
-                        Text("A calmer way to plan, follow through, and collect your thoughts.")
-                            .font(.body).foregroundStyle(.secondary)
+                VStack(spacing: 0) {
+                    Spacer(minLength: 48)
+                    VStack(spacing: 24) {
+                        Image("BloomwardLogo")
+                            .resizable().scaledToFit().frame(width: 88, height: 88)
+                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                            .accessibilityHidden(true)
+                        VStack(spacing: 12) {
+                            Text("Bloomward").font(.largeTitle.weight(.semibold))
+                            Text("Tasks, routines, and notes.\nYour day, at your pace.")
+                                .font(.body).foregroundStyle(.secondary)
+                        }
                     }
-                    VStack(alignment: .leading, spacing: 20) {
-                        welcomeRow("Tasks", detail: "Plan what matters, with or without a time.", symbol: "checkmark.circle")
-                        welcomeRow("Routines", detail: "Keep checklists you can return to.", symbol: "repeat")
-                        welcomeRow("Notes", detail: "Give each day's thoughts a home.", symbol: "doc.text")
-                    }
+                    Spacer(minLength: 56)
                     VStack(spacing: 12) {
+                        Text("No account needed. Start here,\nback up and sync when you're ready.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                            .padding(.bottom, 8)
                         Button(action: start) {
-                            Text("Start planning").fontWeight(.semibold).frame(maxWidth: .infinity, minHeight: 44)
-                        }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle)
-                        Button("Sign in", action: signIn).frame(maxWidth: .infinity, minHeight: 44)
-                        Text("No account required. Back up your plan later if you want to.")
-                            .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                            Text("Start planning").font(.body.weight(.semibold))
+                                .frame(maxWidth: .infinity, minHeight: 44).padding(.vertical, 4)
+                        }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 14))
+                        Button(action: signIn) {
+                            Text("Sign in").font(.body.weight(.medium))
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }.buttonStyle(.plain).foregroundStyle(PlannerStyle.accent)
                     }
-                }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
-            }.background(PlannerStyle.canvas).navigationTitle("Bloomward").navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(PlannerStyle.canvas, for: .navigationBar)
-        }.tint(PlannerStyle.accent)
-    }
-    private func welcomeRow(_ title: String, detail: String, symbol: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            PlannerIcon(symbol: symbol)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
-            }
-        }
+                }.frame(maxWidth: 420).frame(minHeight: max(0, geometry.size.height - 48))
+                    .padding(24).frame(maxWidth: .infinity).multilineTextAlignment(.center)
+            }.scrollIndicators(.hidden)
+        }.background(PlannerStyle.canvas).tint(PlannerStyle.accent)
     }
 }
 
