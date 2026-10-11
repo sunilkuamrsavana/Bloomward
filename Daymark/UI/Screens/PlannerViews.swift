@@ -156,18 +156,27 @@ private struct PlannerSectionTitle: View {
 
 @MainActor
 private struct PlannerDateBar: View {
+    var showsWeek = false
     @Environment(AppModel.self) private var model
     @State private var choosesDate = false
     var body: some View {
         @Bindable var model = model
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) { dateButton.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 0); navigationButtons }
-            VStack(alignment: .leading, spacing: 8) {
-                dateButton
-                HStack { Spacer(); navigationButtons }
+        VStack(alignment: .leading, spacing: 16) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { dateButton.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 0); navigationButtons }
+                VStack(alignment: .leading, spacing: 8) {
+                    dateButton
+                    HStack { Spacer(); navigationButtons }
+                }
+            }
+            if showsWeek {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 4) { weekDays }.frame(maxWidth: .infinity)
+                    ScrollView(.horizontal) { HStack(spacing: 4) { weekDays } }.scrollIndicators(.hidden)
+                }
             }
         }
-        .padding(.horizontal, 20).padding(.vertical, 10)
+        .padding(.horizontal, 20).padding(.vertical, showsWeek ? 16 : 10)
         .background(PlannerStyle.canvas)
         .sheet(isPresented: $choosesDate) {
             NavigationStack {
@@ -185,9 +194,9 @@ private struct PlannerDateBar: View {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(model.selectedPlanDay == model.plannerToday ? "Today" : model.selectedPlanDate.formatted(.dateTime.weekday(.wide)))
-                        .font(.headline).foregroundStyle(.primary)
+                        .font(showsWeek ? .title2.weight(.semibold) : .headline).foregroundStyle(.primary)
                     Text(model.selectedPlanDate.formatted(.dateTime.month(.wide).day().year()))
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(showsWeek ? .subheadline : .caption).foregroundStyle(.secondary)
                 }
                 Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
             }.frame(minHeight: 44, alignment: .leading)
@@ -195,14 +204,41 @@ private struct PlannerDateBar: View {
     }
     private var navigationButtons: some View {
         HStack(spacing: 0) {
-            Button { model.moveSelectedDate(-1) } label: {
+            if showsWeek && model.selectedPlanDay != model.plannerToday {
+                Button("Today") { model.selectedPlanDate = Date() }
+                    .font(.subheadline.weight(.medium)).frame(minHeight: 44).padding(.horizontal, 8)
+            }
+            Button { model.moveSelectedDate(showsWeek ? -7 : -1) } label: {
                 Image(systemName: "chevron.left").font(.subheadline.weight(.semibold)).frame(width: 44, height: 44)
-            }.accessibilityLabel("Previous day")
-            Divider().frame(height: 16)
-            Button { model.moveSelectedDate(1) } label: {
+            }.accessibilityLabel(showsWeek ? "Previous week" : "Previous day")
+            Button { model.moveSelectedDate(showsWeek ? 7 : 1) } label: {
                 Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).frame(width: 44, height: 44)
-            }.accessibilityLabel("Next day")
+            }.accessibilityLabel(showsWeek ? "Next week" : "Next day")
         }.background(PlannerStyle.surface, in: RoundedRectangle(cornerRadius: 14))
+    }
+    private var weekDates: [Date] {
+        let start = model.calendar.dateInterval(of: .weekOfYear, for: model.selectedPlanDate)?.start ?? model.selectedPlanDate
+        return (0..<7).compactMap { model.calendar.date(byAdding: .day, value: $0, to: start) }
+    }
+    private var weekDays: some View {
+        ForEach(weekDates, id: \.self) { date in
+            let day = LocalDay(date: date, calendar: model.calendar)
+            let selected = day == model.selectedPlanDay
+            Button { model.selectedPlanDate = date } label: {
+                VStack(spacing: 6) {
+                    Text(date.formatted(.dateTime.weekday(.abbreviated)))
+                        .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: true, vertical: false)
+                    Text("\(day.day)").font(.body.weight(selected ? .semibold : .regular))
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .foregroundStyle(selected ? PlannerStyle.canvas : Color.primary)
+                        .background(selected ? PlannerStyle.accent : Color.clear, in: Circle())
+                        .overlay { if day == model.plannerToday && !selected { Circle().strokeBorder(PlannerStyle.accent.opacity(0.4)) } }
+                }.frame(minWidth: 44)
+            }.buttonStyle(.plain).accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+                .accessibilityValue(selected ? "Selected" : "")
+        }
     }
 }
 
@@ -215,14 +251,32 @@ private struct PlannerDayView: View {
     @State private var editing: PlanOccurrence?
     @State private var error: String?
     private var open: [PlanOccurrence] { model.selectedPlan.filter { [.pending, .partial].contains($0.status) } }
-    private var finished: [PlanOccurrence] { model.selectedPlan.filter { ![.pending, .partial].contains($0.status) } }
+    private var scheduled: [PlanOccurrence] { open.filter { $0.minute != nil } }
+    private var anytime: [PlanOccurrence] { open.filter { $0.minute == nil } }
+    private var completed: [PlanOccurrence] { model.selectedPlan.filter { $0.status == .completed } }
+    private var other: [PlanOccurrence] { model.selectedPlan.filter { [.skipped, .moved].contains($0.status) } }
     private var notes: [DayNote] { model.state.dayNotes.filter { $0.day == model.selectedPlanDay && !$0.isArchived } }
     private var showsEmptyPage: Bool {
         model.selectedPlan.isEmpty && notes.isEmpty && model.state.activeRoutine == nil && !model.localDataNeedsRecovery
     }
     private var emptyState: some View {
-        PlannerEmptyState(symbol: "checklist", title: "Nothing planned yet",
-            detail: "Add a task or plan a routine.", actionTitle: "Add a task") { addsTask = true }
+        VStack(spacing: 12) {
+            Image(systemName: "checklist").font(.title2).foregroundStyle(PlannerStyle.accent).accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Plan this day").font(.title3.weight(.semibold))
+                Text("Add a task, or use one of your routines.").font(.subheadline).foregroundStyle(.secondary)
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 24) { emptyActions }
+                VStack(spacing: 4) { emptyActions }
+            }
+        }.multilineTextAlignment(.center).padding(.vertical, 24)
+    }
+    private var emptyActions: some View {
+        Group {
+            Button { addsTask = true } label: { Label("Add task", systemImage: "plus").frame(minHeight: 44) }
+            Button { addsRoutine = true } label: { Label("Add routine", systemImage: "repeat").frame(minHeight: 44) }
+        }.font(.subheadline.weight(.medium)).buttonStyle(.borderless)
     }
     private var dayList: some View {
         List {
@@ -243,23 +297,20 @@ private struct PlannerDayView: View {
                     }.buttonStyle(.plain)
                 }
             }
-            if !model.selectedPlan.isEmpty {
-                if !open.isEmpty {
-                    Section { ForEach(open) { taskRow($0) } }
-                    header: { PlannerSectionTitle(title: "To do", detail: "\(open.count) remaining") }
-                }
-                if !finished.isEmpty {
-                    Section { ForEach(finished) { taskRow($0) } }
-                    header: { PlannerSectionTitle(title: "Finished & moved", detail: "\(finished.count)") }
-                }
-            }
+            taskSection(scheduled, title: "Scheduled")
+            taskSection(anytime, title: "Any time")
+            taskSection(completed, title: "Completed")
+            taskSection(other, title: "Skipped & moved")
             if !notes.isEmpty {
                 Section {
                     ForEach(notes) { note in
                         NavigationLink { PlannerNoteEditor(note: note) } label: {
                             HStack(spacing: 12) {
                                 PlannerIcon(symbol: "doc.text")
-                                Text(note.displayTitle).font(.body.weight(.medium))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(note.displayTitle).font(.body.weight(.medium))
+                                    if !note.body.isEmpty { Text(note.body).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
+                                }
                             }.frame(minHeight: 44)
                         }
                     }
@@ -271,13 +322,14 @@ private struct PlannerDayView: View {
     }
     var body: some View {
         VStack(spacing: 0) {
-            PlannerDateBar()
+            PlannerDateBar(showsWeek: true)
+            Divider().padding(.horizontal, 20)
             dayList
         }
         .background(PlannerStyle.canvas).navigationTitle("Day")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showsAddOptions = true } label: { Image(systemName: "plus").fontWeight(.semibold) }
+                Button { showsAddOptions = true } label: { Label("Add", systemImage: "plus").font(.subheadline.weight(.medium)) }
                     .accessibilityLabel("Add to this day")
             }
         }
@@ -293,6 +345,13 @@ private struct PlannerDayView: View {
         .alert("Could not save", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) { error = nil }
         } message: { Text(error ?? "") }
+    }
+    @ViewBuilder
+    private func taskSection(_ tasks: [PlanOccurrence], title: String) -> some View {
+        if !tasks.isEmpty {
+            Section { ForEach(tasks) { taskRow($0) } }
+            header: { PlannerSectionTitle(title: title, detail: "\(tasks.count)") }
+        }
     }
     private func taskRow(_ task: PlanOccurrence) -> some View {
         HStack(spacing: 12) {
@@ -312,6 +371,7 @@ private struct PlannerDayView: View {
                     Text(task.title).font(.body.weight(.medium))
                         .foregroundStyle(task.status == .completed ? Color.secondary : Color.primary)
                         .strikethrough(task.status == .completed)
+                        .fixedSize(horizontal: false, vertical: true)
                     if let minute = task.minute { Label(plannerTime(minute), systemImage: "clock").font(.caption).foregroundStyle(.secondary) }
                     if !task.steps.isEmpty {
                         Label("\(task.steps.filter(\.isDone).count) of \(task.steps.count) steps", systemImage: "checklist")
@@ -322,7 +382,7 @@ private struct PlannerDayView: View {
                     if let day = task.movedTo { Text(verbatim: "Moved to \(day.month)/\(day.day)/\(day.year)").font(.caption).foregroundStyle(.secondary) }
                 }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
             }.buttonStyle(.plain)
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).accessibilityHidden(true)
         }
     }
     private func completionSymbol(_ status: PlanStatus) -> String {
@@ -1152,37 +1212,57 @@ struct PlannerWelcomeView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 12) {
                         Image("BloomwardLogo")
-                            .resizable().scaledToFit().frame(width: 72, height: 72)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .resizable().scaledToFit().frame(width: 40, height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .accessibilityHidden(true)
-                        VStack(spacing: 12) {
-                            Text("Bloomward").font(.largeTitle.weight(.semibold))
-                            Text("Tasks, routines, and notes.\nYour day, at your pace.")
-                                .font(.body).foregroundStyle(.secondary)
+                        Text("Bloomward").font(.headline)
+                    }
+                    Spacer(minLength: 56)
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Your day,\nat your pace.").font(.largeTitle.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("Plan what matters, build a rhythm, and keep your thoughts close.")
+                            .font(.body).foregroundStyle(.secondary).lineSpacing(3)
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 20) { welcomeCategories }
+                            VStack(alignment: .leading, spacing: 12) { welcomeCategories }
+                        }.padding(.top, 4)
+                    }
+                    Spacer(minLength: 64)
+                    VStack(alignment: .leading, spacing: 16) {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 24) { startButton; Spacer(minLength: 12); signInButton }
+                            VStack(alignment: .leading, spacing: 8) { startButton; signInButton }
                         }
-                    }
-                    VStack(spacing: 12) {
-                        Button(action: start) {
-                            Text("Start planning").font(.body.weight(.semibold))
-                                .padding(.horizontal, 24).padding(.vertical, 12)
-                                .frame(minHeight: 44)
-                                .foregroundStyle(PlannerStyle.canvas)
-                                .background(PlannerStyle.accent, in: Capsule())
-                        }.buttonStyle(.plain)
-                        Text("No account needed. Sync when you're ready.")
+                        Text("No account required.\nStart on this iPhone. Sign in later to sync.")
                             .font(.footnote).foregroundStyle(.secondary)
-                        Button(action: signIn) {
-                            Text("Sign in").font(.subheadline.weight(.medium)).frame(minHeight: 44)
-                        }.buttonStyle(.plain).foregroundStyle(PlannerStyle.accent)
                     }
-                }.frame(maxWidth: 360).padding(.horizontal, 24).padding(.vertical, 32)
-                    .frame(maxWidth: .infinity).frame(minHeight: geometry.size.height)
-                    .multilineTextAlignment(.center)
+                }.frame(maxWidth: 400, alignment: .leading).frame(minHeight: max(0, geometry.size.height - 48))
+                    .padding(.horizontal, 28).padding(.vertical, 24).frame(maxWidth: .infinity)
             }.scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
         }.background(PlannerStyle.canvas).tint(PlannerStyle.accent)
+    }
+    private var welcomeCategories: some View {
+        Group {
+            Label("Tasks", systemImage: "checkmark.circle")
+            Label("Routines", systemImage: "repeat")
+            Label("Notes", systemImage: "doc.text")
+        }.font(.subheadline).foregroundStyle(PlannerStyle.accent).fixedSize(horizontal: true, vertical: false)
+    }
+    private var startButton: some View {
+        Button(action: start) {
+            Text("Start planning").font(.body.weight(.semibold))
+                .padding(.horizontal, 20).padding(.vertical, 12).frame(minHeight: 44)
+                .foregroundStyle(PlannerStyle.canvas)
+                .background(PlannerStyle.accent, in: RoundedRectangle(cornerRadius: 14))
+        }.buttonStyle(.plain)
+    }
+    private var signInButton: some View {
+        Button("Sign in", action: signIn).font(.subheadline.weight(.medium))
+            .frame(minHeight: 44).buttonStyle(.plain).foregroundStyle(PlannerStyle.accent)
     }
 }
 
