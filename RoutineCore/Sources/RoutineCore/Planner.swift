@@ -47,6 +47,24 @@ public struct PlanTask: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+public extension Routine {
+    func planTask(on day: LocalDay, minute: Int? = nil, weekdays: Set<Int>? = nil) throws -> PlanTask {
+        let checklistDay: LocalDay
+        if let weekdays {
+            guard let eligible = (0..<7).map({ day.adding(days: $0) }).first(where: {
+                weekdays.contains($0.weekday) && !executionSteps(on: $0).isEmpty
+            }) else { throw PlannerError.invalidTask }
+            checklistDay = eligible
+        } else { checklistDay = day }
+        let steps = executionSteps(on: checklistDay).map {
+            PlanStep(id: $0.step.id, title: ($0.path + [$0.step.title]).joined(separator: " / "), notes: $0.step.notes)
+        }
+        let task = PlanTask(title: title, startsOn: day, minute: minute, weekdays: weekdays, steps: steps, routineID: id)
+        guard !steps.isEmpty, task.isValid else { throw PlannerError.invalidTask }
+        return task
+    }
+}
+
 public struct PlanOccurrence: Identifiable, Codable, Equatable, Sendable {
     public var taskID: UUID
     public var day: LocalDay

@@ -35,7 +35,7 @@ final class AppModel {
     var routineResumeAt: Date?
     private var dayRevision = 0
 
-    private let calendar: Calendar
+    let calendar: Calendar
     private let now: () -> Date
     private let storage: UserDefaults?
 
@@ -559,13 +559,9 @@ extension AppModel {
         persist()
     }
 
-    func addRoutineToDay(_ routine: Routine, weekdays: Set<Int>? = nil) throws {
-        let steps = routine.executionSteps(on: selectedPlanDay).map {
-            PlanStep(id: $0.step.id, title: ($0.path + [$0.step.title]).joined(separator: " / "), notes: $0.step.notes)
-        }
-        guard !steps.isEmpty else { throw PlannerError.invalidTask }
-        try saveTask(PlanTask(title: routine.title, startsOn: selectedPlanDay,
-                             minute: routine.schedule?.startMinute, weekdays: weekdays, steps: steps, routineID: routine.id))
+    func addRoutineToDay(_ routine: Routine, on day: LocalDay? = nil, minute: Int? = nil, weekdays: Set<Int>? = nil) throws {
+        let start = day ?? selectedPlanDay
+        try saveTask(routine.planTask(on: start, minute: minute, weekdays: weekdays))
     }
 
     func archiveRoutine(_ routine: Routine) {
