@@ -54,7 +54,28 @@ private struct PlannerEmptyState: View {
                 }.buttonStyle(.borderless)
             }
         }.multilineTextAlignment(.center).padding(.vertical, 24)
-            .frame(maxWidth: .infinity).listRowBackground(Color.clear).listRowSeparator(.hidden)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct PlannerEmptyOverlay<EmptyContent: View>: ViewModifier {
+    let isPresented: Bool
+    @ViewBuilder var emptyContent: () -> EmptyContent
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if isPresented {
+                GeometryReader { geometry in
+                    ScrollView {
+                        emptyContent()
+                            .padding(.horizontal, 24)
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: geometry.size.height)
+                    }.scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
+                        .background(PlannerStyle.canvas)
+                }
+            }
+        }
     }
 }
 
@@ -195,7 +216,15 @@ private struct PlannerDayView: View {
     @State private var error: String?
     private var open: [PlanOccurrence] { model.selectedPlan.filter { [.pending, .partial].contains($0.status) } }
     private var finished: [PlanOccurrence] { model.selectedPlan.filter { ![.pending, .partial].contains($0.status) } }
-    var body: some View {
+    private var notes: [DayNote] { model.state.dayNotes.filter { $0.day == model.selectedPlanDay && !$0.isArchived } }
+    private var showsEmptyPage: Bool {
+        model.selectedPlan.isEmpty && notes.isEmpty && model.state.activeRoutine == nil && !model.localDataNeedsRecovery
+    }
+    private var emptyState: some View {
+        PlannerEmptyState(symbol: "checklist", title: "Nothing planned yet",
+            detail: "Add a task or plan a routine.", actionTitle: "Add a task") { addsTask = true }
+    }
+    private var dayList: some View {
         List {
             if model.localDataNeedsRecovery {
                 Section { Text("Your local save needs recovery. Changes are disabled to protect your records.").foregroundStyle(.red) }
@@ -214,12 +243,7 @@ private struct PlannerDayView: View {
                     }.buttonStyle(.plain)
                 }
             }
-            if model.selectedPlan.isEmpty {
-                Section {
-                    PlannerEmptyState(symbol: "checklist", title: "Nothing planned yet",
-                        detail: "Add a task or plan a routine.", actionTitle: "Add a task") { addsTask = true }
-                }.listRowBackground(Color.clear)
-            } else {
+            if !model.selectedPlan.isEmpty {
                 if !open.isEmpty {
                     Section { ForEach(open) { taskRow($0) } }
                     header: { PlannerSectionTitle(title: "To do", detail: "\(open.count) remaining") }
@@ -229,7 +253,6 @@ private struct PlannerDayView: View {
                     header: { PlannerSectionTitle(title: "Finished & moved", detail: "\(finished.count)") }
                 }
             }
-            let notes = model.state.dayNotes.filter { $0.day == model.selectedPlanDay && !$0.isArchived }
             if !notes.isEmpty {
                 Section {
                     ForEach(notes) { note in
@@ -243,9 +266,15 @@ private struct PlannerDayView: View {
                 } header: { PlannerSectionTitle(title: "Notes", detail: "\(notes.count)") }
             }
         }
-        .navigationTitle("Day")
         .modifier(PlannerListLayout())
-        .safeAreaInset(edge: .top, spacing: 0) { PlannerDateBar() }
+        .modifier(PlannerEmptyOverlay(isPresented: showsEmptyPage) { emptyState })
+    }
+    var body: some View {
+        VStack(spacing: 0) {
+            PlannerDateBar()
+            dayList
+        }
+        .background(PlannerStyle.canvas).navigationTitle("Day")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showsAddOptions = true } label: { Image(systemName: "plus").fontWeight(.semibold) }
@@ -570,6 +599,11 @@ private struct PlannerRoutinesView: View {
     private var repeatingTasks: [PlanTask] {
         model.state.planTasks.filter { !$0.isArchived && $0.weekdays != nil && ($0.endsOn.map { $0 >= model.plannerToday } ?? true) && (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)) }
     }
+    private var emptyState: some View {
+        PlannerEmptyState(symbol: "repeat", title: query.isEmpty ? "No routines yet" : "No matching routines",
+            detail: query.isEmpty ? "Create a checklist to use again." : "Try a different name.",
+            actionTitle: query.isEmpty ? "Create routine" : nil) { creates = true }
+    }
     var body: some View {
         List {
             Section {
@@ -584,11 +618,6 @@ private struct PlannerRoutinesView: View {
                             Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
                         }.frame(minHeight: 44)
                     }.buttonStyle(.plain)
-                }
-                if visibleRoutines.isEmpty {
-                    PlannerEmptyState(symbol: "repeat", title: query.isEmpty ? "No routines yet" : "No matching routines",
-                        detail: query.isEmpty ? "Create a checklist to use again." : "Try a different name.",
-                        actionTitle: query.isEmpty ? "Create routine" : nil) { creates = true }
                 }
             } header: {
                 if !visibleRoutines.isEmpty { PlannerSectionTitle(title: "Your routines", detail: "\(visibleRoutines.count)") }
@@ -611,6 +640,7 @@ private struct PlannerRoutinesView: View {
             }
         }
         .modifier(PlannerListLayout())
+        .modifier(PlannerEmptyOverlay(isPresented: visibleRoutines.isEmpty && repeatingTasks.isEmpty) { emptyState })
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search routines")
         .navigationTitle("Routines")
         .toolbar {
@@ -722,10 +752,6 @@ private struct PlannerRoutinePicker: View {
     var body: some View {
         NavigationStack {
             List {
-                if model.activeRoutines.isEmpty {
-                    PlannerEmptyState(symbol: "repeat", title: "No routines yet", detail: "Create a checklist, then choose its schedule.",
-                        actionTitle: "Create a routine") { creates = true }
-                }
                 ForEach(model.activeRoutines) { routine in
                     Button {
                         selected = routine
@@ -737,6 +763,10 @@ private struct PlannerRoutinePicker: View {
                 }
                 if !model.activeRoutines.isEmpty { Button("Create a routine") { creates = true } }
             }.modifier(PlannerListLayout()).navigationTitle("Add routine")
+            .modifier(PlannerEmptyOverlay(isPresented: model.activeRoutines.isEmpty) {
+                PlannerEmptyState(symbol: "repeat", title: "No routines yet", detail: "Create a checklist, then choose its schedule.",
+                    actionTitle: "Create a routine") { creates = true }
+            })
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .sheet(isPresented: $creates) { PlannerRoutineEditor() }
             .sheet(item: $selected) { routine in
@@ -807,15 +837,8 @@ private struct PlannerNotesView: View {
             (query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.body.localizedCaseInsensitiveContains(query)) }
             .sorted { $0.updatedAt > $1.updatedAt }
     }
-    var body: some View {
+    private var noteList: some View {
         List {
-            if notes.isEmpty {
-                Section {
-                    PlannerEmptyState(symbol: "square.and.pencil", title: query.isEmpty ? "No notes for this day" : "No matching notes",
-                        detail: query.isEmpty ? "Write something you want to keep." : "Try a different search.",
-                        actionTitle: query.isEmpty ? "Write a note" : nil) { creates = true }
-                }.listRowBackground(Color.clear)
-            }
             if !notes.isEmpty {
                 Section {
                     ForEach(notes) { note in
@@ -832,8 +855,18 @@ private struct PlannerNotesView: View {
             }
         }
         .modifier(PlannerListLayout())
-        .navigationTitle("Notes")
-        .safeAreaInset(edge: .top, spacing: 0) { PlannerDateBar() }
+        .modifier(PlannerEmptyOverlay(isPresented: notes.isEmpty) {
+            PlannerEmptyState(symbol: "square.and.pencil", title: query.isEmpty ? "No notes for this day" : "No matching notes",
+                detail: query.isEmpty ? "Write something you want to keep." : "Try a different search.",
+                actionTitle: query.isEmpty ? "Write a note" : nil) { creates = true }
+        })
+    }
+    var body: some View {
+        VStack(spacing: 0) {
+            PlannerDateBar()
+            noteList
+        }
+        .background(PlannerStyle.canvas).navigationTitle("Notes")
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search this day's notes")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -1059,10 +1092,10 @@ private struct PlannerSettingsView: View {
                                 do { try model.saveNote(restored, expected: note) } catch { self.error = error.localizedDescription }
                             }
                         }
-                        if model.state.dayNotes.allSatisfy({ !$0.isArchived }) {
-                            PlannerEmptyState(symbol: "trash", title: "Trash is empty", detail: "Notes you remove can be restored here.")
-                        }
                     }.modifier(PlannerListLayout()).navigationTitle("Trash").navigationBarTitleDisplayMode(.inline)
+                    .modifier(PlannerEmptyOverlay(isPresented: model.state.dayNotes.allSatisfy({ !$0.isArchived })) {
+                        PlannerEmptyState(symbol: "trash", title: "Trash is empty", detail: "Notes you remove can be restored here.")
+                    })
                 }
                 NavigationLink("Removed tasks") {
                     List {
@@ -1072,10 +1105,10 @@ private struct PlannerSettingsView: View {
                                 do { try model.updateOccurrence(restored) } catch { self.error = error.localizedDescription }
                             }
                         }
-                        if model.state.planOccurrences.allSatisfy({ !$0.isRemoved }) {
-                            PlannerEmptyState(symbol: "checklist", title: "No removed tasks", detail: "Removed tasks can be restored here.")
-                        }
                     }.modifier(PlannerListLayout()).navigationTitle("Removed tasks").navigationBarTitleDisplayMode(.inline)
+                    .modifier(PlannerEmptyOverlay(isPresented: model.state.planOccurrences.allSatisfy({ !$0.isRemoved })) {
+                        PlannerEmptyState(symbol: "checklist", title: "No removed tasks", detail: "Removed tasks can be restored here.")
+                    })
                 }
                 NavigationLink("Archived routines") {
                     List {
@@ -1084,10 +1117,10 @@ private struct PlannerSettingsView: View {
                                 do { try model.restorePlannerRoutine(routine) } catch { self.error = error.localizedDescription }
                             }
                         }
-                        if model.state.routines.allSatisfy({ !$0.isArchived }) {
-                            PlannerEmptyState(symbol: "archivebox", title: "No archived routines", detail: "Archived checklists can be restored here.")
-                        }
                     }.modifier(PlannerListLayout()).navigationTitle("Archived routines").navigationBarTitleDisplayMode(.inline)
+                    .modifier(PlannerEmptyOverlay(isPresented: model.state.routines.allSatisfy({ !$0.isArchived })) {
+                        PlannerEmptyState(symbol: "archivebox", title: "No archived routines", detail: "Archived checklists can be restored here.")
+                    })
                 }
             }
             Section("Previous records") {
@@ -1100,10 +1133,10 @@ private struct PlannerSettingsView: View {
                             Text("\(run.outcomes.filter { $0 == .completed }.count) of \(run.outcomes.count) steps completed").font(.caption).foregroundStyle(.secondary)
                         }
                       }
-                      if model.state.routineHistory.isEmpty {
-                          PlannerEmptyState(symbol: "clock", title: "No previous sessions", detail: "Earlier routine sessions appear here.")
-                      }
                     }.modifier(PlannerListLayout()).navigationTitle("Previous sessions").navigationBarTitleDisplayMode(.inline)
+                    .modifier(PlannerEmptyOverlay(isPresented: model.state.routineHistory.isEmpty) {
+                        PlannerEmptyState(symbol: "clock", title: "No previous sessions", detail: "Earlier routine sessions appear here.")
+                    })
                 }
             }
         }.modifier(PlannerFormLayout()).navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
@@ -1119,12 +1152,11 @@ struct PlannerWelcomeView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(spacing: 0) {
-                    Spacer(minLength: 48)
+                VStack(spacing: 32) {
                     VStack(spacing: 24) {
                         Image("BloomwardLogo")
-                            .resizable().scaledToFit().frame(width: 88, height: 88)
-                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                            .resizable().scaledToFit().frame(width: 72, height: 72)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .accessibilityHidden(true)
                         VStack(spacing: 12) {
                             Text("Bloomward").font(.largeTitle.weight(.semibold))
@@ -1132,23 +1164,24 @@ struct PlannerWelcomeView: View {
                                 .font(.body).foregroundStyle(.secondary)
                         }
                     }
-                    Spacer(minLength: 56)
                     VStack(spacing: 12) {
-                        Text("No account needed. Start here,\nback up and sync when you're ready.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                            .padding(.bottom, 8)
                         Button(action: start) {
                             Text("Start planning").font(.body.weight(.semibold))
-                                .frame(maxWidth: .infinity, minHeight: 44).padding(.vertical, 4)
-                        }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 14))
+                                .padding(.horizontal, 24).padding(.vertical, 12)
+                                .frame(minHeight: 44)
+                                .foregroundStyle(PlannerStyle.canvas)
+                                .background(PlannerStyle.accent, in: Capsule())
+                        }.buttonStyle(.plain)
+                        Text("No account needed. Sync when you're ready.")
+                            .font(.footnote).foregroundStyle(.secondary)
                         Button(action: signIn) {
-                            Text("Sign in").font(.body.weight(.medium))
-                                .frame(maxWidth: .infinity, minHeight: 44)
+                            Text("Sign in").font(.subheadline.weight(.medium)).frame(minHeight: 44)
                         }.buttonStyle(.plain).foregroundStyle(PlannerStyle.accent)
                     }
-                }.frame(maxWidth: 420).frame(minHeight: max(0, geometry.size.height - 48))
-                    .padding(24).frame(maxWidth: .infinity).multilineTextAlignment(.center)
-            }.scrollIndicators(.hidden)
+                }.frame(maxWidth: 360).padding(.horizontal, 24).padding(.vertical, 32)
+                    .frame(maxWidth: .infinity).frame(minHeight: geometry.size.height)
+                    .multilineTextAlignment(.center)
+            }.scrollBounceBehavior(.basedOnSize).scrollIndicators(.hidden)
         }.background(PlannerStyle.canvas).tint(PlannerStyle.accent)
     }
 }
